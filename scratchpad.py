@@ -4,58 +4,6 @@ from datetime import datetime, date
 
 from twilio.rest import TwilioRestClient
 
-ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
-AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
-client = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
-
-class Session:
-
-    def __init__(self, users_phone_number):
-        self.handled_messages = set()
-        self.session_start_time = datetime.utcnow()
-        self.users_phone_number = users_phone_number
-        self.service_phone_number = "+12407536527"
-
-    def await_response_message(self, timeout=None):
-        await_start_time = datetime.utcnow()
-        while(True):
-            for message in client.messages.list(from_=self.users_phone_number):
-                if message.sid not in self.handled_messages and message.date_created >= self.session_start_time:
-                    self.handled_messages.add(message.sid)
-                    return message.body
-            time.sleep(1)
-            if timeout and datetime.utcnow() - await_start_time > timeout:
-                raise TimeoutError("Too much time passed while waiting for incoming text.")
-
-    def send_message(self, message):
-        client.messages.create(
-            body=message,
-            to=self.users_phone_number,
-            from_=self.service_phone_number,
-        )
-
-    def get_string(self, prompt_message):
-        self.send_message(prompt_message)
-        return self.await_response_message()
-
-    def get_integer(self, prompt_message):
-        self.send_message(prompt_message)
-        return self._get_type(int, "Whole numbers only, please. Try again.")
-
-    def get_floating_point(self, prompt_message):
-        self.send_message(prompt_message)
-        return self._get_type(float, "Numbers only, please. Try again.")
-
-    def _get_type(self, type_cast_function, invalid_type_message):
-        user_response = None
-        while (user_response is None):
-            response = self.await_response_message()
-            try:
-                user_response = type_cast_function(response)
-            except ValueError:
-                self.send_message(invalid_type_message)
-        return user_response
-
 def hello_world():
     session = Session('+12407789795')
     session.send_message("Hello! Welcome to the test box")
@@ -109,18 +57,26 @@ conversation.send_message("You were born in {}.".format(birth_year))
 from kidmuseum import TxtConversation, get_image
 from datetime import date
 
+# * poll the server for someone to text hipster to start the conversation
+# * server eventually responds hash used to converse with user (i.e. phone number)
 conversation = TxtConversation('hipster')
 
 # Welcome the user and ask for a selfie image
+# * tell server to send message for user (via hash)
+# * tell server to send a message for user and return url for MMS sent back
+# * package url into image object and return it
 conversation.send_message("Welcome to Hipster Face!")
 selfie = conversation.ask_for_selfie("Reply with a selfie and see what happens :P")
 
 # Get a funny mustache and sunglasses from the kidmuseum image library
+# * package url into image object and return it
 curley_mustache = get_image("curley mustache")
 hipster_sunglasses = get_image("sunglasses")
 
 # Paste a mustache and hipster shades on the person's face
+# * tell server to add one image onto other image and return updated url
 selfie.add_mustache(curley_mustache)
 selfie.add_glasses(hipster_sunglasses)
 
+# * tell server to send back updated image to user
 conversation.send_picture(selfie)
