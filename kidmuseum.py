@@ -1,57 +1,17 @@
 from datetime import datetime
 import time
+import urllib2
+import json
 
-
-timeout = 120 # seconds, i.e. 2 minutes
-
-
-class TimeoutError(Exception):
-    """Thrown when the program has waited too long for something to happen."""
-    pass
-
-
-class SmsPlayground(object):
-
-    def __init__(self):
-        pass
-
-    def register_conversation(self, timeout=None):
-        start = datetime.utcnow()
-        while (True):
-            for message in client.messages.list():
-                if message.sid not in self.handled_messages and message.date_created >= self.session_start_time:
-                    self.handled_messages.add(message.sid)
-                    return message.body
-            time.sleep(1)
-            if timeout and datetime.utcnow() - start - timeout:
-                raise TimeoutError("Too much time passed while waiting for incoming text.")
-
-    def _get_messages(self, session_start_time):
-        messages = []
-        for message in client.messages.list():
-            if message.sid not in self.handled_messages and message.date_created >= self.session_start_time:
-                self.handled_messages.add(message.sid)
-                return message.body
-
-    def _wait_for_response(self, timeout=None):
-        await_start_time = datetime.utcnow()
-        while(True):
-            for message in client.messages.list(from_=self.users_phone_number):
-                if message.sid not in self.handled_messages and message.date_created >= self.session_start_time:
-                    self.handled_messages.add(message.sid)
-                    return message.body
-            time.sleep(1)
-            if timeout and datetime.utcnow() - await_start_time > timeout:
-                raise TimeoutError("Too much time passed while waiting for incoming text.")
 
 class TxtConversation(object):
     """
     A TxtConversation manages a text conversation between a person txting you and your program.
-    It comes with a bunch of useful functions that help you communicate with the person txting
+    It comes with a bunch of useful functions that help you communicate with the person texting
     your program, in particular sending messages and getting information from the user of your
     program.
 
-    It also handles registering your program with the SMS Playground.  This allows people to
+    It also handles registering your program with the Texting Playground.  This allows people to
     pick your program to chat with by sending a txt with the name of your program.
 
     Here's a simple example of what a program could look like:
@@ -65,7 +25,7 @@ class TxtConversation(object):
 
         conversation.send_message("Hey, " + name + " is an awesome name!")
         conversation.send_message("I bet you're super smart too.")
-        conversation.send_message("To be honest, you're the coolest person to talk to me all day today :D")
+        conversation.send_message("To be honest, you're the coolest person I've talked today BY FAR :D")
         converstaion.send_message("Gotta go, ttyl!")
 
     Now, let's pretend the phone number for the SMS Playground was 240-555-0033.  Here's what the
@@ -77,68 +37,115 @@ class TxtConversation(object):
         Person:   Sarah
         Program:  Hey, Sarah is an awesome name!
         Program:  I bet you're super smart too.
-        Program:  To be honest, you're the coolest person to talk to me all day today :D
+        Program:  To be honest, you're the coolest person I've talked today BY FAR :D
         Program:  Gotta go, ttyl!
     """
 
-    def __init__(self, start_message):
+    def __init__(self, keyword):
         """
         This is the code that get's called when you create the conversation.  In the example above,
         the code would be: TxtConversation("I <3 compliments").
 
-        :param start_message: What someone would txt to start this conversation.
-        :param timeout: How long to wait for someone to text a number until we give up and stop the program
+        :param keyword: What someone would text to start this conversation?
         """
-        self.handled_messages = set()
-        self.session_start_time = datetime.utcnow()
-        self.users_phone_number = users_phone_number
-        self.service_phone_number = "+12407536527"
-
-        # Tell the playground any messages sent with out start_message
-        # should be reserved for our program.
-        self.playground = SmsPlayground()
-        self.playground.register_conversation(start_message)
-
-        # Wait for someone to text our start_message before we
-        # start our program
-
-
-    def _wait_for_response(self, timeout=None):
-        await_start_time = datetime.utcnow()
-        while(True):
-            for message in client.messages.list(from_=self.users_phone_number):
-                if message.sid not in self.handled_messages and message.date_created >= self.session_start_time:
-                    self.handled_messages.add(message.sid)
-                    return message.body
-            time.sleep(1)
-            if timeout and datetime.utcnow() - await_start_time > timeout:
-                raise TimeoutError("Too much time passed while waiting for incoming text.")
+        self.conversation_code = start_a_conversation(keyword)
 
     def send_message(self, message):
-        client.messages.create(
-            body=message,
-            to=self.users_phone_number,
-            from_=self.service_phone_number,
-        )
+        send_message(self.conversation_code, message)
+
+    def send_picture(self, picture_url, message=""):
+        send_message(self.conversation_code, message, picture_url)
 
     def get_string(self, prompt_message):
-        self.playground.send_message(prompt_message)
-        return self.playground.wait_for_response_message()
+        self.send_message(prompt_message)
+        return get_response_message(self.conversation_code, "string")
 
     def get_integer(self, prompt_message):
-        self.playground.send_message(prompt_message)
-        return self.wait_for_response(int, "Whole numbers only, please. Try again.")
+        self.send_message(prompt_message)
+        return get_response_message(self.conversation_code, "int")
 
     def get_floating_point(self, prompt_message):
         self.send_message(prompt_message)
-        return self.wait_for_response(float, "Numbers only, please. Try again.")
+        return get_response_message(self.conversation_code, "float")
 
-    def _get_type(self, type_cast_function, invalid_type_message):
-        user_response = None
-        while (user_response is None):
-            response = self.playground.wait_for_response()
-            try:
-                user_response = type_cast_function(response)
-            except ValueError:
-                self.playground.send_message(invalid_type_message)
-        return user_response
+    def get_picture(self, prompt_message):
+        self.send_message(prompt_message)
+        return get_response_message(self.conversation_code, "picture")
+
+# ----------------------------------------------------------------------------
+# Functions for communicating with the Texting Playground server
+# ----------------------------------------------------------------------------
+
+start_conversation_url = "http://localhost:5000/conversation/start"
+send_message_url = "http://localhost:5000/conversation/{}/message/send"
+get_response_message_url = "http://localhost:5000/conversation/{}/message/response/{}"
+
+
+def start_a_conversation(keyword):
+    timeout_seconds = 120
+    start_time = datetime.utcnow()
+
+    while (True):
+        # Ask the server to start a conversation with someone
+        # who texts the keyword to the Texting Playground's phone number
+        request = urllib2.Request(start_conversation_url, json.dumps({
+            'keyword': keyword,
+            'messages_must_be_older_than': str(start_time),
+        }), {'Content-Type': 'application/json'})
+        response_data = json.loads(urllib2.urlopen(request).read())
+
+        # If nobody has texted our keyword to the Texting Playgroud yet,
+        # wait a bit and check again.  If it's been a really long time,
+        # stop waiting and stop the program.
+        if 'wait_for_seconds' in response_data:
+            time.sleep(response_data['wait_for_seconds'])
+            if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
+                raise Exception("Too much time passed while waiting for text with {}.".format(keyword))
+            continue
+
+        # return the special conversation code used to communicated with
+        # the user who started the conversation
+        return response_data['conversation_code']
+
+
+def send_message(conversation_code, message, picture_url=None):
+    # Tell the server to send a text message to the user in the conversation
+    request = urllib2.Request(send_message_url.format(conversation_code), json.dumps({
+        'message': message,
+        'picture_url': picture_url,
+    }), {'Content-Type': 'application/json'})
+    response = urllib2.urlopen(request)
+
+    # If the server told us something was wrong with our request,
+    # stop the program
+    if response.getcode() != 200:
+        raise Exception("Failed to send message: {}".format(response.read()))
+
+
+def get_response_message(conversation_code, response_type):
+    timeout_seconds = 120
+    start_time = datetime.utcnow()
+
+    while (True):
+        # Ask the server for the message the user sent to respond
+        # to our last message sent to them
+        url = get_response_message_url.format(conversation_code, response_type)
+        request = urllib2.Request(url, json.dumps({
+            'messages_must_be_older_than': str(start_time),
+        }), {'Content-Type': 'application/json'})
+        response_data = json.loads(urllib2.urlopen(request).read())
+
+        # If the user hasn't responded yet, wait a bit and check again.
+        # If it's been a really long time, stop waiting and stop the program.
+        if 'wait_for_seconds' in response_data:
+            time.sleep(response_data['wait_for_seconds'])
+            if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
+                raise Exception("Too much time passed while waiting for a response")
+            continue
+
+        # return the special conversation code used to communicated with
+        # the user who started the conversation
+        if response_type == "picture":
+            return response_data['url']
+        else:
+            return response_data['message']
