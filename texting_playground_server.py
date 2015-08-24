@@ -1,7 +1,7 @@
 import os
 import json
 import random
-from datetime import date
+from datetime import datetime
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request
@@ -31,8 +31,7 @@ def start_a_conversation():
 
     # Check if any users have sent a text to the server with the keyword used to start the conversation,
     # making sure the message wasn't already handled earlier and isn't from a long time ago
-    for message in twilio.messages.list(date_sent=date.today()):
-        print message.date_created, oldest_message_time
+    for message in twilio.messages.list(date_sent=datetime.utcnow().date()):
         if message.sid not in handled_messages and message.date_created >= oldest_message_time:
 
             # If this message doesn't match our keyword, try the next message
