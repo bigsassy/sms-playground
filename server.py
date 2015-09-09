@@ -53,6 +53,10 @@ eyeCascade = cv2.CascadeClassifier(eyeCascadeFilePath)
 # API Endpoints
 #-----------------------------------------------------------------------------
 
+@app.route("/", methods=['GET'])
+def index():
+    return "<html><head><title>KID Museum: SMS Playground</title><body>It works.</body></html>"
+
 @app.route("/conversation/start", methods=['POST'])
 def start_a_conversation():
     response = None
@@ -467,4 +471,5 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=80, debug=True)
+    port = 80 if os.environ.get("ENV") == "production" else 5000
+    app.run(host="0.0.0.0", port=port, debug=True)

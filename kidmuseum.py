@@ -4,11 +4,11 @@ import urllib2
 import json
 
 
-start_conversation_url = "http://localhost:5000/conversation/start"
-send_message_url = "http://localhost:5000/conversation/{}/message/send"
-get_response_message_url = "http://localhost:5000/conversation/{}/message/response/{}"
-add_to_picture_url = "http://localhost:5000/picture/{}/{}"
-get_transformed_picture_url = "http://localhost:5000/picture/{}/"
+start_conversation_url = "https://sms-playground.herokuapp.com/conversation/start"
+send_message_url = "https://sms-playground.herokuapp.com/conversation/{}/message/send"
+get_response_message_url = "https://sms-playground.herokuapp.com/conversation/{}/message/response/{}"
+add_to_picture_url = "https://sms-playground.herokuapp.com/picture/{}/{}"
+get_transformed_picture_url = "https://sms-playground.herokuapp.com/picture/{}/"
 
 
 class TxtConversation(object):
