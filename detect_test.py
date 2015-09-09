@@ -1,5 +1,10 @@
+import os
+import urllib
+import uuid
+from urlparse import urlparse
+
 import cv2  # OpenCV Library
- 
+
 #-----------------------------------------------------------------------------
 #       Load and configure Haar Cascade Classifiers
 #-----------------------------------------------------------------------------
@@ -22,7 +27,7 @@ eyeCascade = cv2.CascadeClassifier(eyeCascadeFilePath)
 #-----------------------------------------------------------------------------
 
 # Load our overlay image: mustache.png
-imgMustache = cv2.imread('mustache.png',-1)
+imgMustache = cv2.imread('images/mustaches/handlebar_mustache.png',-1)
  
 # Create the mask for the mustache
 orig_mask = imgMustache[:,:,3]
@@ -40,7 +45,7 @@ origMustacheHeight, origMustacheWidth = imgMustache.shape[:2]
 #-----------------------------------------------------------------------------
 
 # Load our overlay image: sunglasses.png
-imgSunglasses = cv2.imread('sunglasses.png',-1)
+imgSunglasses = cv2.imread('images/sunglasses/sunglasses1.png',-1)
 
 # Create the mask for the sunglasses
 orig_mask_sg = imgSunglasses[:,:,3]
@@ -56,8 +61,19 @@ origSunglassesHeight, origSunglassesWidth = imgSunglasses.shape[:2]
 #-----------------------------------------------------------------------------
 #       Main program
 #-----------------------------------------------------------------------------
- 
-frame = cv2.imread('selfie_small.jpg')
+
+url = "https://s3.amazonaws.com/threerides_misc/selfie.jpg"
+file_extension = os.path.splitext(urlparse(url).path)[1]
+image_path = "images/{}.{}".format(str(uuid.uuid4()).replace("-", ""), file_extension)
+urllib.urlretrieve(url, image_path)
+frame = cv2.imread(image_path)
+
+original_height, original_width = frame.shape[:2]
+if max(original_height, original_width) > 640:
+    if original_height > original_width:
+        frame = cv2.resize(frame, (int(original_width * (640.0 / original_height)), 640))
+    else:
+        frame = cv2.resize(frame, (640, int(original_height * (640.0 / original_width))))
 
 # Create greyscale image from the video feed
 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -147,14 +163,14 @@ for (x, y, w, h) in faces:
         #cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
 
         # The sunglasses should overlap the eyes a little bit
-        sunglassesWidth =  int(ew * 1.5)
-        sunglassesHeight = sunglassesWidth * origSunglassesHeight / origSunglassesWidth
+        sunglassesWidth =  int(ew * 1.3)
+        sunglassesHeight = int(origSunglassesHeight * (float(sunglassesWidth) / origSunglassesWidth))
 
         # Center the sunglasses over the eyes
-        x1 = nx - (sunglassesWidth/4)
-        x2 = nx + nw + (sunglassesWidth/4)
-        y1 = ny - (eh / 3) - (sunglassesHeight/2)
-        y2 = ny - (eh / 3) + (sunglassesHeight/2)
+        x1 = (ex + (ew / 2)) - (sunglassesWidth / 2)
+        x2 = x1 + sunglassesWidth
+        y1 = ey
+        y2 = ey + sunglassesHeight
 
         # Check for clipping
         if x1 < 0:
@@ -193,4 +209,4 @@ for (x, y, w, h) in faces:
         roi_color[y1:y2, x1:x2] = dst
 
 # Display the resulting frame
-cv2.imwrite('hipstafied.jpg', frame)
+cv2.imwrite('images/hipstafied.jpg', frame)

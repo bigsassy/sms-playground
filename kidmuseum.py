@@ -4,6 +4,13 @@ import urllib2
 import json
 
 
+start_conversation_url = "http://localhost:5000/conversation/start"
+send_message_url = "http://localhost:5000/conversation/{}/message/send"
+get_response_message_url = "http://localhost:5000/conversation/{}/message/response/{}"
+add_to_picture_url = "http://localhost:5000/picture/{}/{}"
+get_transformed_picture_url = "http://localhost:5000/picture/{}/"
+
+
 class TxtConversation(object):
     """
     A TxtConversation manages a text conversation between a person txting you and your program.
@@ -48,104 +55,125 @@ class TxtConversation(object):
 
         :param keyword: What someone would text to start this conversation?
         """
-        self.conversation_code = start_a_conversation(keyword)
+        timeout_seconds = 120
+        start_time = datetime.utcnow()
 
-    def send_message(self, message):
-        send_message(self.conversation_code, message)
+        while (True):
+            # Ask the server to start a conversation with someone
+            # who texts the keyword to the Texting Playground's phone number
+            request = urllib2.Request(start_conversation_url, json.dumps({
+                'keyword': keyword,
+                'messages_must_be_older_than': str(start_time),
+            }), {'Content-Type': 'application/json'})
+            response_data = json.loads(urllib2.urlopen(request).read())
 
-    def send_picture(self, picture_url, message=""):
-        send_message(self.conversation_code, message, picture_url)
+            # If nobody has texted our keyword to the Texting Playgroud yet,
+            # wait a bit and check again.  If it's been a really long time,
+            # stop waiting and stop the program.
+            if 'wait_for_seconds' in response_data:
+                time.sleep(response_data['wait_for_seconds'])
+                if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
+                    raise Exception("Too much time passed while waiting for text with {}.".format(keyword))
+                continue
+
+            # return the special conversation code used to communicated with
+            # the user who started the conversation
+            self.conversation_code = response_data['conversation_code']
+            break
+
+    def send_message(self, message, picture_url=None):
+        # Tell the server to send a text message to the user in the conversation
+        request = urllib2.Request(send_message_url.format(self.conversation_code), json.dumps({
+            'message': message,
+            'picture_url': picture_url,
+        }), {'Content-Type': 'application/json'})
+        response = urllib2.urlopen(request)
+
+        # If the server told us something was wrong with our request, stop the program
+        if response.getcode() != 200:
+            raise Exception("Failed to send message: {}".format(response.read()))
+
+    def get_response_message(self, response_type):
+        timeout_seconds = 120
+        start_time = datetime.utcnow()
+
+        while (True):
+            # Ask the server for the message the user sent to respond
+            # to our last message sent to them
+            url = get_response_message_url.format(self.conversation_code, response_type)
+            request = urllib2.Request(url, json.dumps({
+                'messages_must_be_older_than': str(start_time),
+            }), {'Content-Type': 'application/json'})
+            response_data = json.loads(urllib2.urlopen(request).read())
+
+            # If the user hasn't responded yet, wait a bit and check again.
+            # If it's been a really long time, stop waiting and stop the program.
+            if 'wait_for_seconds' in response_data:
+                time.sleep(response_data['wait_for_seconds'])
+                if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
+                    raise Exception("Too much time passed while waiting for a response")
+                continue
+
+            # return the special conversation code used to communicated with
+            # the user who started the conversation
+            if response_type == "picture":
+                return response_data['picture_code']
+            else:
+                return response_data['message']
+
+    def send_picture(self, picture_or_url, message=""):
+        url = picture_or_url
+        if type(picture_or_url) is Picture:
+            url = picture_or_url.get_url()
+        self.send_message(message, picture_url=url)
 
     def get_string(self, prompt_message):
         self.send_message(prompt_message)
-        return get_response_message(self.conversation_code, "string")
+        return self.get_response_message("string")
 
     def get_integer(self, prompt_message):
         self.send_message(prompt_message)
-        return get_response_message(self.conversation_code, "int")
+        return self.get_response_message("int")
 
     def get_floating_point(self, prompt_message):
         self.send_message(prompt_message)
-        return get_response_message(self.conversation_code, "float")
+        return self.get_response_message("float")
 
     def get_picture(self, prompt_message):
         self.send_message(prompt_message)
-        return get_response_message(self.conversation_code, "picture")
-
-# ----------------------------------------------------------------------------
-# Functions for communicating with the Texting Playground server
-# ----------------------------------------------------------------------------
-
-start_conversation_url = "http://localhost:5000/conversation/start"
-send_message_url = "http://localhost:5000/conversation/{}/message/send"
-get_response_message_url = "http://localhost:5000/conversation/{}/message/response/{}"
+        picture_code = self.get_response_message("picture")
+        return Picture(picture_code)
 
 
-def start_a_conversation(keyword):
-    timeout_seconds = 120
-    start_time = datetime.utcnow()
+class Picture(object):
+    """
+    """
+    def __init__(self, picture_code):
+        self.picture_code = picture_code
 
-    while (True):
-        # Ask the server to start a conversation with someone
-        # who texts the keyword to the Texting Playground's phone number
-        request = urllib2.Request(start_conversation_url, json.dumps({
-            'keyword': keyword,
-            'messages_must_be_older_than': str(start_time),
-        }), {'Content-Type': 'application/json'})
+    def get_url(self):
+        request = urllib2.Request(get_transformed_picture_url.format(self.picture_code))
         response_data = json.loads(urllib2.urlopen(request).read())
+        return response_data['url']
 
-        # If nobody has texted our keyword to the Texting Playgroud yet,
-        # wait a bit and check again.  If it's been a really long time,
-        # stop waiting and stop the program.
-        if 'wait_for_seconds' in response_data:
-            time.sleep(response_data['wait_for_seconds'])
-            if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
-                raise Exception("Too much time passed while waiting for text with {}.".format(keyword))
-            continue
-
-        # return the special conversation code used to communicated with
-        # the user who started the conversation
-        return response_data['conversation_code']
-
-
-def send_message(conversation_code, message, picture_url=None):
-    # Tell the server to send a text message to the user in the conversation
-    request = urllib2.Request(send_message_url.format(conversation_code), json.dumps({
-        'message': message,
-        'picture_url': picture_url,
-    }), {'Content-Type': 'application/json'})
-    response = urllib2.urlopen(request)
-
-    # If the server told us something was wrong with our request,
-    # stop the program
-    if response.getcode() != 200:
-        raise Exception("Failed to send message: {}".format(response.read()))
-
-
-def get_response_message(conversation_code, response_type):
-    timeout_seconds = 120
-    start_time = datetime.utcnow()
-
-    while (True):
-        # Ask the server for the message the user sent to respond
-        # to our last message sent to them
-        url = get_response_message_url.format(conversation_code, response_type)
-        request = urllib2.Request(url, json.dumps({
-            'messages_must_be_older_than': str(start_time),
+    def add_mustache(self, mustache_name):
+        # Tell the server to send a text message to the user in the conversation
+        request = urllib2.Request(add_to_picture_url.format(self.picture_code, "mustache"), json.dumps({
+            'mustache_name': mustache_name,
         }), {'Content-Type': 'application/json'})
-        response_data = json.loads(urllib2.urlopen(request).read())
+        response = urllib2.urlopen(request)
 
-        # If the user hasn't responded yet, wait a bit and check again.
-        # If it's been a really long time, stop waiting and stop the program.
-        if 'wait_for_seconds' in response_data:
-            time.sleep(response_data['wait_for_seconds'])
-            if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
-                raise Exception("Too much time passed while waiting for a response")
-            continue
+        # If the server told us something was wrong with our request, stop the program
+        if response.getcode() != 200:
+            raise Exception("Failed to send message: {}".format(response.read()))
 
-        # return the special conversation code used to communicated with
-        # the user who started the conversation
-        if response_type == "picture":
-            return response_data['url']
-        else:
-            return response_data['message']
+    def add_sunglasses(self, sunglasses_name):
+        # Tell the server to send a text message to the user in the conversation
+        request = urllib2.Request(add_to_picture_url.format(self.picture_code, "sunglasses"), json.dumps({
+            'sunglasses_name': sunglasses_name,
+        }), {'Content-Type': 'application/json'})
+        response = urllib2.urlopen(request)
+
+        # If the server told us something was wrong with our request, stop the program
+        if response.getcode() != 200:
+            raise Exception("Failed to send message: {}".format(response.read()))
