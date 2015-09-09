@@ -7,8 +7,8 @@ import json
 start_conversation_url = "https://sms-playground.herokuapp.com/conversation/start"
 send_message_url = "https://sms-playground.herokuapp.com/conversation/{}/message/send"
 get_response_message_url = "https://sms-playground.herokuapp.com/conversation/{}/message/response/{}"
-add_to_picture_url = "https://sms-playground.herokuapp.com/picture/{}/{}"
-get_transformed_picture_url = "https://sms-playground.herokuapp.com/picture/{}/"
+add_to_picture_url = "https://sms-playground.herokuapp.com/conversation/{}/picture/{}/{}"
+get_transformed_picture_url = "https://sms-playground.herokuapp.com/conversation/{}/picture/{}/"
 
 
 class TxtConversation(object):
@@ -142,13 +142,14 @@ class TxtConversation(object):
     def get_picture(self, prompt_message):
         self.send_message(prompt_message)
         picture_code = self.get_response_message("picture")
-        return Picture(picture_code)
+        return Picture(self.conversation_code, picture_code)
 
 
 class Picture(object):
     """
     """
-    def __init__(self, picture_code):
+    def __init__(self, conversation_code, picture_code):
+        self.conversation_code = conversation_code
         self.picture_code = picture_code
 
     def get_url(self):
@@ -158,7 +159,7 @@ class Picture(object):
 
     def add_mustache(self, mustache_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.picture_code, "mustache"), json.dumps({
+        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "mustache"), json.dumps({
             'mustache_name': mustache_name,
         }), {'Content-Type': 'application/json'})
         response = urllib2.urlopen(request)
@@ -169,7 +170,7 @@ class Picture(object):
 
     def add_sunglasses(self, sunglasses_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.picture_code, "sunglasses"), json.dumps({
+        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "sunglasses"), json.dumps({
             'sunglasses_name': sunglasses_name,
         }), {'Content-Type': 'application/json'})
         response = urllib2.urlopen(request)

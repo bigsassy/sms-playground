@@ -7,13 +7,17 @@ import cgi
 from datetime import datetime
 from urlparse import urlparse
 import mimetypes
+import logging
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request
 import dateutil.parser
 import cv2
 import boto3
+from logentries import LogentriesHandler
 
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
@@ -88,6 +92,9 @@ def start_a_conversation():
             # to send this user any text messages and get replies
             response = {'conversation_code': conversation_code}
 
+            log.info("Created conversation for {} via keyword {} ({})".format(
+                conversation_to_phone_number[conversation_code], keyword, conversation_code))
+
             break
 
     # if we didn't find any messages that are starting a conversation,
@@ -125,6 +132,12 @@ def get_response_message(conversation_code, expected_response_type):
         users_phone_number = conversation_to_phone_number[conversation_code]
         for message in twilio.messages.list(from_=users_phone_number):
             if message.sid not in handled_messages and message.date_created >= oldest_message_time:
+
+                log.info("Received {} message from {}: {}{} ({})".format(
+                    expected_response_type, users_phone_number, response['message'],
+                    "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" else "",
+                    conversation_code
+                ))
 
                 # Remember this message so we won't process it a second time later
                 handled_messages.add(message.sid)
@@ -169,6 +182,9 @@ def get_response_message(conversation_code, expected_response_type):
                         response = {
                             'picture_code': picture_code,
                         }
+
+                        log.info("Created picture for {} ({}) ({})".format(
+                            conversation_to_phone_number[conversation_code], conversation_code, picture_code))
                     else:
                         _send_message(conversation_code, "Please reply with a picture.")
 
@@ -182,15 +198,19 @@ def get_response_message(conversation_code, expected_response_type):
     return json.dumps(response), 200, {'Content-Type': 'application/json'}
 
 
-@app.route("/picture/<picture_code>/<area>", methods=['POST'])
-def add_to_picture(picture_code, area):
+@app.route("/conversation/<conversation_code>/picture/<picture_code>/<area>", methods=['POST'])
+def add_to_picture(conversation_code, picture_code, area):
     request_data = request.get_json()
 
     if area == "mustache":
         pictures[picture_code][area] = request_data['mustache_name']
+        log.info("Added {} to {} ({}) ({})".format(
+            request_data['mustache_name'], area, conversation_code, picture_code))
 
     elif area == "sunglasses":
         pictures[picture_code][area] = request_data['sunglasses_name']
+        log.info("Added {} to {} ({}) ({})".format(
+            request_data['sunglasses_name'], area, conversation_code, picture_code))
 
     else:
         return "Area {} is not supported".format(area), 404
@@ -198,8 +218,8 @@ def add_to_picture(picture_code, area):
     return "", 200
 
 
-@app.route("/picture/<picture_code>/", methods=['GET'])
-def get_transformed_picture(picture_code):
+@app.route("/conversation/<conversation_code>/picture/<picture_code>/", methods=['GET'])
+def get_transformed_picture(conversation_code, picture_code):
     # Download the picture
     url = pictures[picture_code]['url']
     image = get_image(url)
@@ -218,6 +238,10 @@ def get_transformed_picture(picture_code):
         s3file = boto3.resource('s3').Object('sms-playground', filename)
         s3file.put(Body=open(transformed_image_path, 'rb'), ACL='public-read',
                    ContentType=mimetypes.guess_type(filename)[0])
+
+        log.info("Transformed picture and saved to {} ({}) ({})".format(
+            filename, conversation_code, picture_code))
+
     finally:
         if transformed_image_path and os.path.exists(transformed_image_path):
             os.remove(transformed_image_path)
@@ -371,6 +395,9 @@ def _send_message(conversation_code, message, picture_url=None):
     if picture_url:
         args['media_url'] = picture_url
     twilio.messages.create(**args)
+    log.info("Sent message to {}: {}{} ({})".format(
+        conversation_to_phone_number[conversation_code], message,
+        "|{}".format(picture_url) if picture_url else "", conversation_code))
 
 
 def make_unique_id():
@@ -471,5 +498,8 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    port = 80 if os.environ.get("ENV") == "production" else 5000
+    port = 5000
+    if os.environ.get("ENV") == "production":
+        port = 80
+        log.addHandler(LogentriesHandler(os.environ['LOGENTRIES_TOKEN']))
     app.run(host="0.0.0.0", port=port, debug=True)
