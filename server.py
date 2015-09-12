@@ -8,15 +8,13 @@ from datetime import datetime
 from urlparse import urlparse
 import mimetypes
 import logging
+from logging.handlers import RotatingFileHandler
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request
 import dateutil.parser
 import cv2
 import boto3
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
@@ -91,7 +89,7 @@ def start_a_conversation():
             # to send this user any text messages and get replies
             response = {'conversation_code': conversation_code}
 
-            log.info("Created conversation for {} via keyword {} ({})".format(
+            app.logger.info("Created conversation for {} via keyword {} ({})".format(
                 conversation_to_phone_number[conversation_code], keyword, conversation_code))
 
             break
@@ -132,7 +130,7 @@ def get_response_message(conversation_code, expected_response_type):
         for message in twilio.messages.list(from_=users_phone_number):
             if message.sid not in handled_messages and message.date_created >= oldest_message_time:
 
-                log.info("Received {} message from {}: {}{} ({})".format(
+                app.logger.info("Received {} message from {}: {}{} ({})".format(
                     expected_response_type, users_phone_number, response['message'],
                     "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" else "",
                     conversation_code
@@ -182,7 +180,7 @@ def get_response_message(conversation_code, expected_response_type):
                             'picture_code': picture_code,
                         }
 
-                        log.info("Created picture for {} ({}) ({})".format(
+                        app.logger.info("Created picture for {} ({}) ({})".format(
                             conversation_to_phone_number[conversation_code], conversation_code, picture_code))
                     else:
                         _send_message(conversation_code, "Please reply with a picture.")
@@ -203,12 +201,12 @@ def add_to_picture(conversation_code, picture_code, area):
 
     if area == "mustache":
         pictures[picture_code][area] = request_data['mustache_name']
-        log.info("Added {} to {} ({}) ({})".format(
+        app.logger.info("Added {} to {} ({}) ({})".format(
             request_data['mustache_name'], area, conversation_code, picture_code))
 
     elif area == "sunglasses":
         pictures[picture_code][area] = request_data['sunglasses_name']
-        log.info("Added {} to {} ({}) ({})".format(
+        app.logger.info("Added {} to {} ({}) ({})".format(
             request_data['sunglasses_name'], area, conversation_code, picture_code))
 
     else:
@@ -238,7 +236,7 @@ def get_transformed_picture(conversation_code, picture_code):
         s3file.put(Body=open(transformed_image_path, 'rb'), ACL='public-read',
                    ContentType=mimetypes.guess_type(filename)[0])
 
-        log.info("Transformed picture and saved to {} ({}) ({})".format(
+        app.logger.info("Transformed picture and saved to {} ({}) ({})".format(
             filename, conversation_code, picture_code))
 
     finally:
@@ -394,7 +392,7 @@ def _send_message(conversation_code, message, picture_url=None):
     if picture_url:
         args['media_url'] = picture_url
     twilio.messages.create(**args)
-    log.info("Sent message to {}: {}{} ({})".format(
+    app.logger.info("Sent message to {}: {}{} ({})".format(
         conversation_to_phone_number[conversation_code], message,
         "|{}".format(picture_url) if picture_url else "", conversation_code))
 
@@ -497,4 +495,7 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
+    handler = RotatingFileHandler('/var/log/sms-playground/server.log', maxBytes=10000, backupCount=1)
+    handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(handler)
     app.run(host="0.0.0.0", port=5000, debug=True)
