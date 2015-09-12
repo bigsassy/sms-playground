@@ -8,8 +8,8 @@ ipdb==0.8.1
 ipython==4.0.0
 ipython-genutils==0.1.0
 Logentries==0.15
-numpy==1.9.2
-scipy==0.15.1
+#numpy==1.9.2
+#scipy==0.15.1
 path.py==7.6
 pexpect==3.3
 pickleshare==0.5

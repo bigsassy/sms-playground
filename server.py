@@ -14,7 +14,6 @@ from flask import Flask, request
 import dateutil.parser
 import cv2
 import boto3
-from logentries import LogentriesHandler
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -498,8 +497,4 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    port = 5000
-    if os.environ.get("ENV") == "production":
-        port = 80
-        log.addHandler(LogentriesHandler(os.environ['LOGENTRIES_TOKEN']))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
