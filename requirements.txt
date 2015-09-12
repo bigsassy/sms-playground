@@ -9,6 +9,7 @@ ipython==4.0.0
 ipython-genutils==0.1.0
 Logentries==0.15
 numpy==1.9.2
+scipy==0.16.0
 path.py==7.6
 pexpect==3.3
 pickleshare==0.5
