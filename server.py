@@ -131,7 +131,7 @@ def get_response_message(conversation_code, expected_response_type):
             if message.sid not in handled_messages and message.date_created >= oldest_message_time:
 
                 app.logger.info("Received {} message from {}: {}{} ({})".format(
-                    expected_response_type, users_phone_number, response['message'],
+                    expected_response_type, users_phone_number, message.body,
                     "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" else "",
                     conversation_code
                 ))
@@ -495,7 +495,7 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    handler = RotatingFileHandler('/var/log/sms-playground/server.log', maxBytes=10000, backupCount=1)
+    handler = RotatingFileHandler('/var/log/sms-playground/server.log', maxBytes=10*1024*1024, backupCount=5)
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
     app.run(host="0.0.0.0", port=5000, debug=True)
