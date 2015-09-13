@@ -157,10 +157,10 @@ class Picture(object):
         response_data = json.loads(urllib2.urlopen(request).read())
         return response_data['url']
 
-    def add_mustache(self, mustache_name):
+    def add_moustache(self, moustache_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "mustache"), json.dumps({
-            'mustache_name': mustache_name,
+        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "moustache"), json.dumps({
+            'moustache_name': moustache_name,
         }), {'Content-Type': 'application/json'})
         response = urllib2.urlopen(request)
 
@@ -168,10 +168,10 @@ class Picture(object):
         if response.getcode() != 200:
             raise Exception("Failed to send message: {}".format(response.read()))
 
-    def add_sunglasses(self, sunglasses_name):
+    def add_glasses(self, glasses_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "sunglasses"), json.dumps({
-            'sunglasses_name': sunglasses_name,
+        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "glasses"), json.dumps({
+            'glasses_name': glasses_name,
         }), {'Content-Type': 'application/json'})
         response = urllib2.urlopen(request)
 

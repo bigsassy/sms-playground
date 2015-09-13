@@ -185,8 +185,8 @@ def get_response_message(conversation_code, expected_response_type):
                         picture_code = make_unique_id()
                         pictures[picture_code] = {
                             'url': message.media_list.list()[0].uri,
-                            'mustache': None,
-                            'sunglasses': None,
+                            'moustache': None,
+                            'glasses': None,
                             'lefteye': None,
                             'righteye': None,
                             'leftcheek': None,
@@ -215,15 +215,15 @@ def get_response_message(conversation_code, expected_response_type):
 def add_to_picture(conversation_code, picture_code, area):
     request_data = request.get_json()
 
-    if area == "mustache":
-        pictures[picture_code][area] = request_data['mustache_name']
+    if area == "moustache":
+        pictures[picture_code][area] = request_data['moustache_name']
         logger.info("Added {} to {} ({}) ({})".format(
-            request_data['mustache_name'], area, conversation_code, picture_code))
+            request_data['moustache_name'], area, conversation_code, picture_code))
 
-    elif area == "sunglasses":
-        pictures[picture_code][area] = request_data['sunglasses_name']
+    elif area == "glasses":
+        pictures[picture_code][area] = request_data['glasses_name']
         logger.info("Added {} to {} ({}) ({})".format(
-            request_data['sunglasses_name'], area, conversation_code, picture_code))
+            request_data['glasses_name'], area, conversation_code, picture_code))
 
     else:
         return "Area {} is not supported".format(area), 404
@@ -272,33 +272,33 @@ def internal_error(exception):
 # Image transform functions
 # ----------------------------------------------------------------------------
 
-def add_mustache(image, face_xywh, nose_xywh, mustache_name):
+def add_moustache(image, face_xywh, nose_xywh, moustache_name):
     x, y, w, h = face_xywh
     nx, ny, nw, nh = nose_xywh
 
-    # Load the mustache image we're adding to the image
-    imgMustache = cv2.imread('images/mustaches/{}.png'.format(mustache_name), -1)
+    # Load the moustache image we're adding to the image
+    imgMustache = cv2.imread(get_moustache_path(moustache_name), -1)
 
-    # Create the mask for the mustache
+    # Create the mask for the moustache
     orig_mask = imgMustache[:,:,3]
 
-    # Create the inverted mask for the mustache
+    # Create the inverted mask for the moustache
     orig_mask_inv = cv2.bitwise_not(orig_mask)
 
-    # Convert mustache image to BGR
+    # Convert moustache image to BGR
     # and save the original image size (used later when re-sizing the image)
     imgMustache = imgMustache[:,:,0:3]
     origMustacheHeight, origMustacheWidth = imgMustache.shape[:2]
 
-    # The mustache should be three times the width of the nose
-    mustacheWidth =  int(2 * nw)
-    mustacheHeight = int(origMustacheHeight * (float(mustacheWidth) / origMustacheWidth))
+    # The moustache should be three times the width of the nose
+    moustacheWidth =  int(2 * nw)
+    moustacheHeight = int(origMustacheHeight * (float(moustacheWidth) / origMustacheWidth))
 
-    # Center the mustache on the bottom of the nose
-    x1 = (nx + (nw / 2)) - (mustacheWidth / 2)
-    x2 = x1 + mustacheWidth
+    # Center the moustache on the bottom of the nose
+    x1 = (nx + (nw / 2)) - (moustacheWidth / 2)
+    x2 = x1 + moustacheWidth
     y1 = ny + (nh / 2)
-    y2 = y1 + mustacheHeight
+    y2 = y1 + moustacheHeight
 
     # Check for clipping
     if x1 < 0:
@@ -310,25 +310,25 @@ def add_mustache(image, face_xywh, nose_xywh, mustache_name):
     if y2 > h:
         y2 = h
 
-    # Re-calculate the width and height of the mustache image
-    mustacheWidth = x2 - x1
-    mustacheHeight = y2 - y1
+    # Re-calculate the width and height of the moustache image
+    moustacheWidth = x2 - x1
+    moustacheHeight = y2 - y1
 
-    # Re-size the original image and the masks to the mustache sizes
+    # Re-size the original image and the masks to the moustache sizes
     # calcualted above
-    mustache = cv2.resize(imgMustache, (mustacheWidth,mustacheHeight), interpolation = cv2.INTER_AREA)
-    mask = cv2.resize(orig_mask, (mustacheWidth,mustacheHeight), interpolation = cv2.INTER_AREA)
-    mask_inv = cv2.resize(orig_mask_inv, (mustacheWidth,mustacheHeight), interpolation = cv2.INTER_AREA)
+    moustache = cv2.resize(imgMustache, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
+    mask = cv2.resize(orig_mask, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
+    mask_inv = cv2.resize(orig_mask_inv, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
 
-    # take ROI for mustache from background equal to size of mustache image
+    # take ROI for moustache from background equal to size of moustache image
     roi = image[y1:y2, x1:x2]
 
-    # roi_bg contains the original image only where the mustache is not
-    # in the region that is the size of the mustache.
+    # roi_bg contains the original image only where the moustache is not
+    # in the region that is the size of the moustache.
     roi_bg = cv2.bitwise_and(roi,roi,mask = mask_inv)
 
-    # roi_fg contains the image of the mustache only where the mustache is
-    roi_fg = cv2.bitwise_and(mustache,mustache,mask = mask)
+    # roi_fg contains the image of the moustache only where the moustache is
+    roi_fg = cv2.bitwise_and(moustache,moustache,mask = mask)
 
     # join the roi_bg and roi_fg
     dst = cv2.add(roi_bg,roi_fg)
@@ -337,33 +337,33 @@ def add_mustache(image, face_xywh, nose_xywh, mustache_name):
     image[y1:y2, x1:x2] = dst
 
 
-def add_sunglasses(image, face_xywh, eyes_xywh, sunglasses_name):
+def add_glasses(image, face_xywh, eyes_xywh, glasses_name):
     x, y, w, h = face_xywh
     ex, ey, ew, eh = eyes_xywh
 
-    # Load our overlay image: sunglasses.png
-    imgSunglasses = cv2.imread('images/sunglasses/{}.png'.format(sunglasses_name), -1)
+    # Load glasses we're adding to the image
+    imgGlasses = cv2.imread(get_glasses_path(glasses_name), -1)
 
-    # Create the mask for the sunglasses
-    orig_mask_sg = imgSunglasses[:,:,3]
+    # Create the mask for the glasses
+    orig_mask_sg = imgGlasses[:,:,3]
 
-    # Create the inverted mask for the sunglasses
+    # Create the inverted mask for the glasses
     orig_mask_inv_sg = cv2.bitwise_not(orig_mask_sg)
 
-    # Convert mustache image to BGR
+    # Convert glasses image to BGR
     # and save the original image size (used later when re-sizing the image)
-    imgSunglasses = imgSunglasses[:,:,0:3]
-    origSunglassesHeight, origSunglassesWidth = imgSunglasses.shape[:2]
+    imgGlasses = imgGlasses[:,:,0:3]
+    origGlassesHeight, origGlassesWidth = imgGlasses.shape[:2]
 
-    # The sunglasses should overlap the eyes a little bit
-    sunglassesWidth =  int(ew * 1.3)
-    sunglassesHeight = int(origSunglassesHeight * (float(sunglassesWidth) / origSunglassesWidth))
+    # The glasses should overlap the eyes a little bit
+    glassesWidth =  int(ew * 1.3)
+    glassesHeight = int(origGlassesHeight * (float(glassesWidth) / origGlassesWidth))
 
-    # Center the sunglasses over the eyes
-    x1 = (ex + (ew / 2)) - (sunglassesWidth / 2)
-    x2 = x1 + sunglassesWidth
+    # Center the glasses over the eyes
+    x1 = (ex + (ew / 2)) - (glassesWidth / 2)
+    x2 = x1 + glassesWidth
     y1 = ey
-    y2 = ey + sunglassesHeight
+    y2 = ey + glassesHeight
 
     # Check for clipping
     if x1 < 0:
@@ -375,25 +375,25 @@ def add_sunglasses(image, face_xywh, eyes_xywh, sunglasses_name):
     if y2 > h:
         y2 = h
 
-    # Re-calculate the width and height of the sunglasses image
-    sunglassesWidth = x2 - x1
-    sunglassesHeight = y2 - y1
+    # Re-calculate the width and height of the glasses image
+    glassesWidth = x2 - x1
+    glassesHeight = y2 - y1
 
-    # Re-size the original image and the masks to the sunglasses sizes
+    # Re-size the original image and the masks to the glasses sizes
     # calcualted above
-    sunglasses = cv2.resize(imgSunglasses, (sunglassesWidth,sunglassesHeight), interpolation = cv2.INTER_AREA)
-    mask = cv2.resize(orig_mask_sg, (sunglassesWidth,sunglassesHeight), interpolation = cv2.INTER_AREA)
-    mask_inv = cv2.resize(orig_mask_inv_sg, (sunglassesWidth,sunglassesHeight), interpolation = cv2.INTER_AREA)
+    glasses = cv2.resize(imgGlasses, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
+    mask = cv2.resize(orig_mask_sg, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
+    mask_inv = cv2.resize(orig_mask_inv_sg, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
 
-    # take ROI for mustache from background equal to size of sunglasses image
+    # take ROI for glasses from background equal to size of glasses image
     roi = image[y1:y2, x1:x2]
 
-    # roi_bg contains the original image only where the sunglasses is not
-    # in the region that is the size of the mustache.
+    # roi_bg contains the original image only where the glasses is not
+    # in the region that is the size of the glasses.
     roi_bg = cv2.bitwise_and(roi,roi,mask = mask_inv)
 
-    # roi_fg contains the image of the mustache only where the sunglasses is
-    roi_fg = cv2.bitwise_and(sunglasses,sunglasses,mask = mask)
+    # roi_fg contains the image of the glasses only where the glasses is
+    roi_fg = cv2.bitwise_and(glasses,glasses,mask = mask)
 
     # join the roi_bg and roi_fg
     dst = cv2.add(roi_bg,roi_fg)
@@ -405,6 +405,14 @@ def add_sunglasses(image, face_xywh, eyes_xywh, sunglasses_name):
 # ----------------------------------------------------------------------------
 # Support functions
 # ----------------------------------------------------------------------------
+def get_moustache_path(moustache_name):
+    return 'images/moustaches/{}.png'.format(moustache_name)
+
+
+def get_glasses_path(glasses_name):
+    return 'images/glasses/{}.png'.format(glasses_name)
+
+
 def _send_message(conversation_code, message, picture_url=None):
     args = {
         'body': message,
@@ -507,11 +515,11 @@ def transform_image(image, transform_info):
             )
 
         # Apply transforms for the face
-        if transform_info['mustache'] and nose_xywh is not None:
-            add_mustache(face_color, face_xywh, nose_xywh, transform_info['mustache'])
+        if transform_info['moustache'] and nose_xywh is not None:
+            add_moustache(face_color, face_xywh, nose_xywh, transform_info['moustache'])
 
-        if transform_info['sunglasses'] and eyes_xywh is not None:
-            add_sunglasses(face_color, face_xywh, eyes_xywh, transform_info['sunglasses'])
+        if transform_info['glasses'] and eyes_xywh is not None:
+            add_glasses(face_color, face_xywh, eyes_xywh, transform_info['glasses'])
 
 
 # ----------------------------------------------------------------------------
@@ -519,4 +527,3 @@ def transform_image(image, transform_info):
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)
-
