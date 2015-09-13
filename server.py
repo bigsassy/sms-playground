@@ -246,6 +246,12 @@ def get_transformed_picture(conversation_code, picture_code):
     return json.dumps({'url': 'https://s3.amazonaws.com/sms-playground/{}'.format(filename)})
 
 
+@app.errorhandler(500)
+def internal_error(exception):
+    app.logger.error(exception)
+    return "", 500
+
+
 # ----------------------------------------------------------------------------
 # Image transform functions
 # ----------------------------------------------------------------------------
