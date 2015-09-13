@@ -131,7 +131,7 @@ def get_response_message(conversation_code, expected_response_type):
             if message.sid not in handled_messages and message.date_created >= oldest_message_time:
 
                 app.logger.info("Received {} message from {}: {}{} ({})".format(
-                    expected_response_type, users_phone_number, message.body,
+                    expected_response_type, users_phone_number, "'{}'".format(message.body),
                     "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" else "",
                     conversation_code
                 ))
