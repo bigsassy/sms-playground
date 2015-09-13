@@ -153,7 +153,7 @@ class Picture(object):
         self.picture_code = picture_code
 
     def get_url(self):
-        request = urllib2.Request(get_transformed_picture_url.format(self.picture_code))
+        request = urllib2.Request(get_transformed_picture_url.format(self.conversation_code, self.picture_code))
         response_data = json.loads(urllib2.urlopen(request).read())
         return response_data['url']
 

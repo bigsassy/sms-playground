@@ -438,8 +438,9 @@ def get_image(url):
             else:
                 image = cv2.resize(image, (640, int(original_height * (640.0 / original_width))))
     finally:
-        if image_path and os.path.exists(image_path):
-            os.remove(image_path)
+        pass
+        # if image_path and os.path.exists(image_path):
+        #     os.remove(image_path)
 
     return image
 
