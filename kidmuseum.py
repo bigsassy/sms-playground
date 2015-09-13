@@ -162,19 +162,21 @@ class Picture(object):
         request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "moustache"), json.dumps({
             'moustache_name': moustache_name,
         }), {'Content-Type': 'application/json'})
-        response = urllib2.urlopen(request)
 
-        # If the server told us something was wrong with our request, stop the program
-        if response.getcode() != 200:
-            raise Exception("Failed to add moustache: {}".format(response.read()))
+        try:
+            urllib2.urlopen(request)
+        except urllib2.HTTPError as error:
+            # If the server told us something was wrong with our request, stop the program
+            raise Exception("Failed to add a moustsache: {}".format(error.read()))
 
     def add_glasses(self, glasses_name):
         # Tell the server to send a text message to the user in the conversation
         request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "glasses"), json.dumps({
             'glasses_name': glasses_name,
         }), {'Content-Type': 'application/json'})
-        response = urllib2.urlopen(request)
 
-        # If the server told us something was wrong with our request, stop the program
-        if response.getcode() != 200:
-            raise Exception("Failed to add glasses: {}".format(response.read()))
+        try:
+            urllib2.urlopen(request)
+        except urllib2.HTTPError as error:
+            # If the server told us something was wrong with our request, stop the program
+            raise Exception("Failed to add glasses: {}".format(error.read()))
