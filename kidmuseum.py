@@ -166,7 +166,7 @@ class Picture(object):
 
         # If the server told us something was wrong with our request, stop the program
         if response.getcode() != 200:
-            raise Exception("Failed to send message: {}".format(response.read()))
+            raise Exception("Failed to add moustache: {}".format(response.read()))
 
     def add_glasses(self, glasses_name):
         # Tell the server to send a text message to the user in the conversation
@@ -177,4 +177,4 @@ class Picture(object):
 
         # If the server told us something was wrong with our request, stop the program
         if response.getcode() != 200:
-            raise Exception("Failed to send message: {}".format(response.read()))
+            raise Exception("Failed to add glasses: {}".format(response.read()))

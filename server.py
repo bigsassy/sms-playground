@@ -216,12 +216,18 @@ def add_to_picture(conversation_code, picture_code, area):
     request_data = request.get_json()
 
     if area == "moustache":
-        pictures[picture_code][area] = request_data['moustache_name']
+        moustache_name = request_data['moustache_name']
+        if not os.path.exists(get_moustache_path(moustache_name)):
+            return "There isn't a moustache with the name {}".format(moustache_name), 404
+        pictures[picture_code][area] = moustache_name
         logger.info("Added {} to {} ({}) ({})".format(
             request_data['moustache_name'], area, conversation_code, picture_code))
 
     elif area == "glasses":
-        pictures[picture_code][area] = request_data['glasses_name']
+        glasses_name = request_data['glasses_name']
+        if not os.path.exists(get_glasses_path(glasses_name)):
+            return "There isn't a moustache with the name {}".format(glasses_name), 404
+        pictures[picture_code][area] = glasses_name
         logger.info("Added {} to {} ({}) ({})".format(
             request_data['glasses_name'], area, conversation_code, picture_code))
 
