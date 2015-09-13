@@ -8,7 +8,7 @@ from datetime import datetime
 from urlparse import urlparse
 import mimetypes
 import logging
-from logging.handlers import RotatingFileHandler
+import logging.handlers
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request
@@ -20,6 +20,22 @@ ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
 AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+LOG_PATH = os.environ['LOG_PATH']
+
+logger = logging.getLogger('sms-playground')
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)-15s %(levelname)-8s %(message)s')
+fileHandler = logging.handlers.RotatingFileHandler(LOG_PATH, maxBytes=10*1024*1024, backupCount=5)
+fileHandler.setLevel(logging.DEBUG)
+fileHandler.setFormatter(formatter)
+logger.addHandler(fileHandler)
+streamHandler = logging.StreamHandler()
+streamHandler.setLevel(logging.DEBUG)
+streamHandler.setFormatter(formatter)
+logger.addHandler(streamHandler)
+
+logger.info("Started server.")
+
 twilio = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
 app = Flask(__name__)
 
@@ -89,7 +105,7 @@ def start_a_conversation():
             # to send this user any text messages and get replies
             response = {'conversation_code': conversation_code}
 
-            app.logger.info("Created conversation for {} via keyword {} ({})".format(
+            logger.info("Created conversation for {} via keyword {} ({})".format(
                 conversation_to_phone_number[conversation_code], keyword, conversation_code))
 
             break
@@ -130,9 +146,9 @@ def get_response_message(conversation_code, expected_response_type):
         for message in twilio.messages.list(from_=users_phone_number):
             if message.sid not in handled_messages and message.date_created >= oldest_message_time:
 
-                app.logger.info("Received {} message from {}: {}{} ({})".format(
+                logger.info("Received {} message from {}: {}{} ({})".format(
                     expected_response_type, users_phone_number, "'{}'".format(message.body),
-                    "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" else "",
+                    "|{}".format(message.media_list.list()[0].uri) if expected_response_type == "picture" and int(message.num_media) > 0 else "",
                     conversation_code
                 ))
 
@@ -180,7 +196,7 @@ def get_response_message(conversation_code, expected_response_type):
                             'picture_code': picture_code,
                         }
 
-                        app.logger.info("Created picture for {} ({}) ({})".format(
+                        logger.info("Created picture for {} ({}) ({})".format(
                             conversation_to_phone_number[conversation_code], conversation_code, picture_code))
                     else:
                         _send_message(conversation_code, "Please reply with a picture.")
@@ -201,12 +217,12 @@ def add_to_picture(conversation_code, picture_code, area):
 
     if area == "mustache":
         pictures[picture_code][area] = request_data['mustache_name']
-        app.logger.info("Added {} to {} ({}) ({})".format(
+        logger.info("Added {} to {} ({}) ({})".format(
             request_data['mustache_name'], area, conversation_code, picture_code))
 
     elif area == "sunglasses":
         pictures[picture_code][area] = request_data['sunglasses_name']
-        app.logger.info("Added {} to {} ({}) ({})".format(
+        logger.info("Added {} to {} ({}) ({})".format(
             request_data['sunglasses_name'], area, conversation_code, picture_code))
 
     else:
@@ -232,11 +248,11 @@ def get_transformed_picture(conversation_code, picture_code):
         filename = '{}{}'.format(make_unique_id(), file_extension)
         transformed_image_path = 'images/{}'.format(filename)
         cv2.imwrite(transformed_image_path, image)
-        s3file = boto3.resource('s3').Object('sms-playground', filename)
+        s3file = boto3.resource('s3', verify=False).Object('sms-playground', filename)
         s3file.put(Body=open(transformed_image_path, 'rb'), ACL='public-read',
                    ContentType=mimetypes.guess_type(filename)[0])
 
-        app.logger.info("Transformed picture and saved to {} ({}) ({})".format(
+        logger.info("Transformed picture and saved to {} ({}) ({})".format(
             filename, conversation_code, picture_code))
 
     finally:
@@ -248,7 +264,7 @@ def get_transformed_picture(conversation_code, picture_code):
 
 @app.errorhandler(500)
 def internal_error(exception):
-    app.logger.error(exception)
+    logger.error(exception)
     return "", 500
 
 
@@ -398,7 +414,7 @@ def _send_message(conversation_code, message, picture_url=None):
     if picture_url:
         args['media_url'] = picture_url
     twilio.messages.create(**args)
-    app.logger.info("Sent message to {}: {}{} ({})".format(
+    logger.info("Sent message to {}: {}{} ({})".format(
         conversation_to_phone_number[conversation_code], message,
         "|{}".format(picture_url) if picture_url else "", conversation_code))
 
@@ -502,7 +518,5 @@ def transform_image(image, transform_info):
 # Main
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
-    handler = RotatingFileHandler('/var/log/sms-playground/server.log', maxBytes=10*1024*1024, backupCount=5)
-    handler.setLevel(logging.DEBUG)
-    app.logger.addHandler(handler)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
+
