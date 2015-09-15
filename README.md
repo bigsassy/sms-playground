@@ -3,16 +3,15 @@ Server and client for letting users easily make quick and fun SMS/MMS programs.
 
 ## How to create a program for SMS Playground
 1. Install python 2.7+ or python 3.4+ if it isn't already installed. If you're on a Mac or Linux,
-   it'll already by installed on your computer. If you're on Windows, try the following:
-  1.
-   you can download Python at
-   https://www.python.org/downloads/.
+   it'll already by installed on your computer. If you're on Windows and you havent installed it yet,
+   go to https://www.python.org/downloads/ to get the installer.
 1. Download the kidmuseum.py into a directory on your computer.  [You can get it here.](http://sms-playground.com/kid_museum.py)
 1. Fire up your favorite text editor, like [Notepad++](https://notepad-plus-plus.org/) or
    [Sublime Text](http://www.sublimetext.com/) and start a new file.
-1. Use the guide below to write a program.  I'd recommend copying one of the examples as a starting point.
+1. Use the guide below to write a program. I'd recommend copying one of the examples at the bottom of this page as a starting point.
 1. Save the file with the .py extension (e.g. myprogram.py) in the same directory as kidmuseum.py.
 1. Run your program. On windows you should be able to double click the file to run it.
+1. Send a text with the phrase that starts the conversation the SMS Playground phone number to run through your program.
 
 ## Quick Guide to using kidmuseum.py
 
@@ -60,7 +59,7 @@ conversation.send_message("In 10 years you'll be " + age_after_ten_years)
 Sends a message to the user asking for a response, and then returns the user's response as an integer.
 ```python
 price = conversation.get_floating_point("How much was the bill?")
-tip = price * 1.20  # tip 20%
+tip = price * 0.20  # tip 20%
 conversation.send_message("You should tip " + tip)
 ```
 #### get_picture
