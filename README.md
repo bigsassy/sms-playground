@@ -144,7 +144,7 @@ from datetime import date
 conversation = TxtConversation('birth year')
 conversation.send_message("Hi!")
 name = conversation.get_string("What's your name?")
-age = conversation.get_integer("Hey, %s. How old are you?" % s)
+age = conversation.get_integer("Hey, %s. How old are you?" % name)
 
 today = date.today()
 birth_year = today.year - age
