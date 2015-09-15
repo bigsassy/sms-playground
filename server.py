@@ -11,7 +11,7 @@ import logging
 import logging.handlers
 
 from twilio.rest import TwilioRestClient
-from flask import Flask, request
+from flask import Flask, request, make_response, redirect
 import dateutil.parser
 import cv2
 import boto3
@@ -72,7 +72,16 @@ eyeCascade = cv2.CascadeClassifier(eyeCascadeFilePath)
 
 @app.route("/", methods=['GET'])
 def index():
-    return "<html><head><title>KID Museum: SMS Playground</title><body>It works.</body></html>"
+    return redirect("https://github.com/bigsassy/sms-playground")
+
+
+@app.route("/kidmuseum.py", methods=['GET'])
+def kidmuseum_py():
+    with open("kidmuseum.py") as kidmuseum_py:
+        response = make_response(kidmuseum_py.read())
+    response.headers["Content-Disposition"] = "attachment; filename=kidmuseum.py"
+    return response
+
 
 @app.route("/conversation/start", methods=['POST'])
 def start_a_conversation():
