@@ -169,8 +169,8 @@ conversation = TxtConversation('hipster')
 conversation.send_message("Welcome to Hipster Face!")
 selfie = conversation.get_picture("Reply with a selfie and see what happens...")
 
-selfie.add_moustache("shades")
-selfie.add_glasses("handlebar")
+selfie.add_moustache("handlebar")
+selfie.add_glasses("shades")
 
 conversation.send_picture(selfie)
 ```
