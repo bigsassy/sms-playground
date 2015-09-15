@@ -203,6 +203,9 @@ class TxtConversation(object):
         if response.getcode() != 200:
             raise Exception("Failed to send message: {}".format(response.read()))
 
+        # Wait a little bit between sending messages so they don't reach the phone out of order
+        time.sleep(1)
+
     def _get_response_message(self, response_type):
         """
         Handles asking the SMS Playground server for the user's response to our previous message
