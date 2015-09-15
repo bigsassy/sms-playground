@@ -93,10 +93,10 @@ Adds a moustache to the picture if there's a face in it. You can pass any of the
 
  _ | _ | _
 :--------: | :----------: | :-------:
-`curly` | `handlebar` | `reynolds`
-![curly](https://s3.amazonaws.com/sms-playground/readme_images/curly_rm.png) | ![handlebar](https://s3.amazonaws.com/sms-playground/readme_images/handlebar_rm.png) | ![reynolds](https://s3.amazonaws.com/sms-playground/readme_images/reynolds_rm.png)
-`walrus` | `imperial` | `yosemite_sam`
-![walrus](https://s3.amazonaws.com/sms-playground/readme_images/walrus_rm.png) | ![imperial](https://s3.amazonaws.com/sms-playground/readme_images/imperial_rm.png) | ![yosemite_sam](https://s3.amazonaws.com/sms-playground/readme_images/yosemite_sam_rm.png)
+`curly` | `handlebar` | `imperial`
+![curly](https://s3.amazonaws.com/sms-playground/readme_images/curly_rm.png) | ![handlebar](https://s3.amazonaws.com/sms-playground/readme_images/handlebar_rm.png) | ![imperial](https://s3.amazonaws.com/sms-playground/readme_images/imperial_rm.png)
+`walrus` | `reynolds` | `yosemite_sam`
+![walrus](https://s3.amazonaws.com/sms-playground/readme_images/walrus_rm.png) | ![reynolds](https://s3.amazonaws.com/sms-playground/readme_images/reynolds_rm.png) | ![yosemite_sam](https://s3.amazonaws.com/sms-playground/readme_images/yosemite_sam_rm.png)
 `horseshoe` |  |
 ![horseshoe](https://s3.amazonaws.com/sms-playground/readme_images/horseshoe_rm.png) |  |
 
