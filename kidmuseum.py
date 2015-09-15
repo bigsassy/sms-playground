@@ -141,7 +141,7 @@ class TxtConversation(object):
 
         Examples:
 
-        age = conversation.get_string("What's your age?")
+        age = conversation.get_integer("What's your age?")
         age_after_ten_years = age + 10
         conversation.send_message("In 10 years you'll be " + age_after_ten_years)
 
@@ -151,13 +151,13 @@ class TxtConversation(object):
         self.send_message(prompt_message)
         return self.get_response_message("int")
 
-    def get_float(self, prompt_message):
+    def get_floating_point(self, prompt_message):
         """
         Asks the user to reply with a message and returns it as a string.
 
         Examples:
 
-        price = conversation.get_string("How much was the bill?")
+        price = conversation.get_floating_point("How much was the bill?")
         tip = price * 1.20  # tip 20%
         conversation.send_message("You should tip " + tip)
 

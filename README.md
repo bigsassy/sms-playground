@@ -17,25 +17,57 @@ Server and client for letting users easily make quick and fun SMS/MMS programs.
 ## Quick Guide to using kidmuseum.py
 
 All programs should start by importing the `TxtConversation` class from the `kidmuseum` module.
-
-    from kidmuseum import TxtConversation
-
+```python
+from kidmuseum import TxtConversation
+```
 You can then create a `TxtConversation` object, which tells the SMS Playground to wait for someone to text
 a certain phrase.  Once they do, the `TxtConversation` object will get created, ready for you to start sending messages.
 You can create a `TxtConversation` like this:
-
-    conversation = TxtConversation("kittens")
-
+```python
+conversation = TxtConversation("kittens")
+```
 In the code above, the variable `conversation` will get set to your `TxtConversation` object once someone texts
 `kittens` to the SMS Playground phone number.  That `conversation` variable will have a few functions you can call
 from it.
 
 #### send_message
 Sends a message to the user's phone.
-
-    conversation.send_message("Hi!  How are you?")
-
-####
+```python
+conversation.send_message("Hi!  How are you?")
+```
+#### send_picture
+Sends an image with either a URL or a Picture object to the user's phone.
+```python
+converstaion.send_picture("http://dreamatico.com/data_images/kitten/kitten-2.jpg", "It's a kitten!")
+converstaion.send_picture("http://dreamatico.com/data_images/kitten/kitten-7.jpg")
+```
+#### get_string
+Sends a message to the user asking for a response, and then returns the user's response as a string.
+```python
+name = conversation.get_string("What's your name?")
+conversation.send_message("Hi, " + name)
+```
+#### get_integer
+Sends a message to the user asking for a response, and then returns the user's response as an integer.
+```python
+age = conversation.get_integer("What's your age?")
+age_after_ten_years = age + 10
+conversation.send_message("In 10 years you'll be " + age_after_ten_years)
+```
+#### get_floating_point
+Sends a message to the user asking for a response, and then returns the user's response as an integer.
+```python
+price = conversation.get_floating_point("How much was the bill?")
+tip = price * 1.20  # tip 20%
+conversation.send_message("You should tip " + tip)
+```
+#### get_picture
+Sends a message to the user asking for a response, and then returns the user's response as an integer.
+```python
+picture = conversation.get_picture("Gimme your best selfie")
+picture.add_glasses("kanye_shades")
+conversation.send_picture(picture, "You with Kanye Shades")
+```
 
 ## Example programs:
 
