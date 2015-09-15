@@ -119,7 +119,7 @@ conversation = TxtConversation("I <3 compliments")
 conversation.send_message("Hi! You love compliments?  Well I got tons of 'em!")
 name = conversation.get_string("First, what's your name?")
 
-conversation.send_message("Hey, " + name + " is an awesome name!")
+conversation.send_message("Hey, %s is an awesome name!" % name)
 conversation.send_message("I bet you're super smart too.")
 conversation.send_message("To be honest, you're the coolest person I've talked today BY FAR :D")
 conversation.send_message("Gotta go, ttyl!")
@@ -144,12 +144,12 @@ from datetime import date
 conversation = TxtConversation('birth year')
 conversation.send_message("Hi!")
 name = conversation.get_string("What's your name?")
-age = conversation.get_integer("Hey, " + name + ". How old are you?")
+age = conversation.get_integer("Hey, %s. How old are you?" % s)
 
 today = date.today()
 birth_year = today.year - age
 
-conversation.send_message("You were born in " + birth_year)
+conversation.send_message("You were born in %s" % birth_year)
 ```
 ### Tip Calculator
 ```python
@@ -158,8 +158,8 @@ from kidmuseum import TxtConversation
 conversation = TxtConversation('tip')
 price = conversation.get_string("How much was the bill?")
 
-tip = price * 1.20  # tip 20%
-conversation.send_message("You should tip " + tip)
+tip = price * 0.20  # tip 20%
+conversation.send_message("You should tip %s" % tip)
 ```
 ### Hipster
 ```python
