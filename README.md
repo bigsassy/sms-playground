@@ -159,7 +159,7 @@ conversation = TxtConversation('tip')
 price = conversation.get_string("How much was the bill?")
 
 tip = price * 0.20  # tip 20%
-conversation.send_message("You should tip %s" % tip)
+conversation.send_message("You should tip %0.2f" % tip)
 ```
 ### Hipster
 ```python
