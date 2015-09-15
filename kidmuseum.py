@@ -133,7 +133,7 @@ class TxtConversation(object):
         :return: The message sent by the user in reply as a string.
         """
         self.send_message(prompt_message)
-        return self.get_response_message("string")
+        return self._get_response_message("string")
 
     def get_integer(self, prompt_message):
         """
@@ -149,7 +149,7 @@ class TxtConversation(object):
         :return: The message sent by the user in reply as an integer.
         """
         self.send_message(prompt_message)
-        return self.get_response_message("int")
+        return self._get_response_message("int")
 
     def get_floating_point(self, prompt_message):
         """
@@ -165,7 +165,7 @@ class TxtConversation(object):
         :return: The message sent by the user in reply as an float.
         """
         self.send_message(prompt_message)
-        return self.get_response_message("float")
+        return self._get_response_message("float")
 
     def get_picture(self, prompt_message):
         """
@@ -181,7 +181,7 @@ class TxtConversation(object):
         :return: The picture sent by the user in reply as a Picture object.
         """
         self.send_message(prompt_message)
-        picture_code = self.get_response_message("picture")
+        picture_code = self._get_response_message("picture")
         return Picture(self.conversation_code, picture_code)
 
     def _send_message(self, message, picture_url=None):
