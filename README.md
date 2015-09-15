@@ -81,6 +81,31 @@ Adds glasses to the picture if there's a face in it.  You can pass in any of the
 ![shades](https://s3.amazonaws.com/sms-playground/readme_images/shades_rm.png) | ![aviators](https://s3.amazonaws.com/sms-playground/readme_images/aviators_rm.png) | ![kanye](https://s3.amazonaws.com/sms-playground/readme_images/kanye_rm.png)
 `glasses` | `rectangle_glasses` |
 ![glasses](https://s3.amazonaws.com/sms-playground/readme_images/glasses_rm.png) | ![rectangle_glasses](https://s3.amazonaws.com/sms-playground/readme_images/rectangle_glasses_rm.png) |
+
+```python
+picture = conversation.get_picture("Gimme your best selfie")
+picture.add_glasses("kanye_shades")
+conversation.send_picture(picture, "You with Kanye Shades")
+```
+
+#### add_moustache
+Adds a moustache to the picture if there's a face in it. You can pass any of the following as a string:
+
+ _ | _ | _
+:--------: | :----------: | :-------:
+`curly` | `handlebar` | `reynolds`
+![curly](https://s3.amazonaws.com/sms-playground/readme_images/curly_rm.png) | ![handlebar](https://s3.amazonaws.com/sms-playground/readme_images/handlebar_rm.png) | ![reynolds](https://s3.amazonaws.com/sms-playground/readme_images/reynolds_rm.png)
+`walrus` | `imperial` | `yosemite_sam`
+![walrus](https://s3.amazonaws.com/sms-playground/readme_images/walrus_rm.png) | ![imperial](https://s3.amazonaws.com/sms-playground/readme_images/imperial_rm.png) | ![yosemite_sam](https://s3.amazonaws.com/sms-playground/readme_images/yosemite_sam_rm.png)
+`horseshoe` |  |
+![horseshoe](https://s3.amazonaws.com/sms-playground/readme_images/horseshoe_rm.png) |  |
+
+```python
+picture = conversation.get_picture("Gimme your best selfie")
+picture.add_moustache("curly")
+conversation.send_picture(picture, "You in Portland, OR")
+```
+
 ## Example programs:
 
 ### I <3 Compliments
