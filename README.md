@@ -78,7 +78,7 @@ Adds glasses to the picture if there's a face in it.  You can pass in any of the
 `shades` | `aviators` | `kanye`
 -------- | ---------- | -------
 ![shades](https://s3.amazonaws.com/sms-playground/readme_images/shades_rm.png) | ![aviators](https://s3.amazonaws.com/sms-playground/readme_images/aviators_rm.png) | ![kanye](https://s3.amazonaws.com/sms-playground/readme_images/kanye_rm.png)
--------- | ---------- | -------
+ | |
 `glasses` | `rectangle_glasses` |
  | |
 ![glasses](https://s3.amazonaws.com/sms-playground/readme_images/glasses_rm.png) | ![rectangle_glasses](https://s3.amazonaws.com/sms-playground/readme_images/rectangle_glasses_rm.png) |
