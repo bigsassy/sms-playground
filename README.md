@@ -138,39 +138,39 @@ conversation.send_picture("http://dreamatico.com/data_images/kitten/kitten-7.jpg
 ```
 ### Birth Year
 ```python
-    from kidmuseum import TxtConversation
-    from datetime import date
+from kidmuseum import TxtConversation
+from datetime import date
 
-    conversation = TxtConversation('birth year')
-    conversation.send_message("Hi!")
-    name = conversation.get_string("What's your name?")
-    age = conversation.get_integer("Hey, " + name + ". How old are you?")
+conversation = TxtConversation('birth year')
+conversation.send_message("Hi!")
+name = conversation.get_string("What's your name?")
+age = conversation.get_integer("Hey, " + name + ". How old are you?")
 
-    today = date.today()
-    birth_year = today.year - age
+today = date.today()
+birth_year = today.year - age
 
-    conversation.send_message("You were born in " + birth_year)
+conversation.send_message("You were born in " + birth_year)
 ```
 ### Tip Calculator
 ```python
-    from kidmuseum import TxtConversation
+from kidmuseum import TxtConversation
 
-    conversation = TxtConversation('tip')
-    price = conversation.get_string("How much was the bill?")
+conversation = TxtConversation('tip')
+price = conversation.get_string("How much was the bill?")
 
-    tip = price * 1.20  # tip 20%
-    conversation.send_message("You should tip " + tip)
+tip = price * 1.20  # tip 20%
+conversation.send_message("You should tip " + tip)
 ```
 ### Hipster
 ```python
-    from kidmuseum import TxtConversation
+from kidmuseum import TxtConversation
 
-    conversation = TxtConversation('hipster')
-    conversation.send_message("Welcome to Hipster Face!")
-    selfie = conversation.get_picture("Reply with a selfie and see what happens...")
+conversation = TxtConversation('hipster')
+conversation.send_message("Welcome to Hipster Face!")
+selfie = conversation.get_picture("Reply with a selfie and see what happens...")
 
-    selfie.add_moustache("moustache1")
-    selfie.add_glasses("glasses1")
+selfie.add_moustache("moustache1")
+selfie.add_glasses("glasses1")
 
-    conversation.send_picture(selfie)
+conversation.send_picture(selfie)
 ```
