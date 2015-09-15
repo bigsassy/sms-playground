@@ -30,6 +30,8 @@ In the code above, the variable `conversation` will get set to your `TxtConversa
 `kittens` to the SMS Playground phone number.  That `conversation` variable will have a few methods you can call
 from it.
 
+### TxtConversation Methods
+
 #### send_message
 Sends a message to the user's phone.
 ```python
@@ -72,6 +74,8 @@ The `get_picture` returns a Picture object.  These objects have a few methods of
 you to add things to the picture and then send it back to the user's phone using the `send_picture`
 method above.
 
+### Picture Methods
+
 #### add_glasses
 Adds glasses to the picture if there's a face in it.  You can pass in any of the following as a string:
 
@@ -84,7 +88,7 @@ Adds glasses to the picture if there's a face in it.  You can pass in any of the
 
 ```python
 picture = conversation.get_picture("Gimme your best selfie")
-picture.add_glasses("kanye_shades")
+picture.add_glasses("kanye")
 conversation.send_picture(picture, "You with Kanye Shades")
 ```
 
