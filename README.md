@@ -116,13 +116,13 @@ conversation.send_picture(picture, "You in Portland, OR")
 from kidmuseum import TxtConversation
 
 conversation = TxtConversation("I <3 compliments")
-converstaion.send_message("Hi! You love compliments?  Well I got tons of 'em!")
+conversation.send_message("Hi! You love compliments?  Well I got tons of 'em!")
 name = converstaion.get_string("First, what's your name?")
 
 conversation.send_message("Hey, " + name + " is an awesome name!")
 conversation.send_message("I bet you're super smart too.")
 conversation.send_message("To be honest, you're the coolest person I've talked today BY FAR :D")
-converstaion.send_message("Gotta go, ttyl!")
+conversation.send_message("Gotta go, ttyl!")
 ```
 ### Kittens!
 ```python
