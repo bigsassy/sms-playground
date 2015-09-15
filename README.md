@@ -75,7 +75,7 @@ method above.
 #### add_glasses
 Adds glasses to the picture if there's a face in it.  You can pass in any of the following as a string:
 
-
+   A       | B | C
 :--------: | :----------: | :-------:
 `shades` | `aviators` | `kanye`
 ![shades](https://s3.amazonaws.com/sms-playground/readme_images/shades_rm.png) | ![aviators](https://s3.amazonaws.com/sms-playground/readme_images/aviators_rm.png) | ![kanye](https://s3.amazonaws.com/sms-playground/readme_images/kanye_rm.png)
