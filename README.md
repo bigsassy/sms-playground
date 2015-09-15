@@ -77,11 +77,10 @@ Adds glasses to the picture if there's a face in it.  You can pass in any of the
 
 `shades` | `aviators` | `kanye`
 -------- | ---------- | -------
-.. image:: https://s3.amazonaws.com/sms-playground/readme_images/shades.png | .. image:: https://s3.amazonaws.com/sms-playground/readme_images/aviators.png |.. image:: https://s3.amazonaws.com/sms-playground/readme_images/kanye.png
+![shades](https://s3.amazonaws.com/sms-playground/readme_images/shades.png) | ![aviators](https://s3.amazonaws.com/sms-playground/readme_images/aviators.png) | ![kanye](https://s3.amazonaws.com/sms-playground/readme_images/kanye.png)
 `glasses` | `rectangle_glasses` |
----------   -------------------
-.. image:: https://s3.amazonaws.com/sms-playground/readme_images/glasses.png | .. image:: https://s3.amazonaws.com/sms-playground/readme_images/rectangle_glasses.png
-
+--------- | ------------------- |
+![glasses](https://s3.amazonaws.com/sms-playground/readme_images/glasses.png) | ![rectangle_glasses](https://s3.amazonaws.com/sms-playground/readme_images/rectangle_glasses.png)
 
 ## Example programs:
 
