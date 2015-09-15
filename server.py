@@ -20,7 +20,7 @@ ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
 AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-LOG_PATH = os.environ['LOG_PATH']
+LOG_PATH = os.environ.get('LOG_PATH', "server.log")
 
 logger = logging.getLogger('sms-playground')
 logger.setLevel(logging.DEBUG)

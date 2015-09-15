@@ -5,7 +5,7 @@ Server and client for letting users easily make quick and fun SMS/MMS programs.
 1. Install python 2.7+ or python 3.4+ if it isn't already installed. If you're on a Mac or Linux,
    it'll already by installed on your computer. If you're on Windows and you havent installed it yet,
    go to https://www.python.org/downloads/ to get the installer.
-1. Download the kidmuseum.py into a directory on your computer.  [You can get it here.](http://sms-playground.com/kid_museum.py)
+1. Download the `kidmuseum.py` library into a directory on your computer.  [You can get it here.](http://sms-playground.com/kidmuseum.py)
 1. Fire up your favorite text editor, like [Notepad++](https://notepad-plus-plus.org/) or
    [Sublime Text](http://www.sublimetext.com/) and start a new file.
 1. Use the guide below to write a program. I'd recommend copying one of the examples at the bottom of this page as a starting point.
