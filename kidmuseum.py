@@ -1,6 +1,9 @@
 from datetime import datetime
 import time
-import urllib2
+try:
+    from urllib2 import Request, urlopen, HTTPError
+except:
+    from urllib.request import Request, urlopen, HTTPError
 import json
 
 
@@ -61,11 +64,11 @@ class TxtConversation(object):
         while (True):
             # Ask the server to start a conversation with someone
             # who texts the keyword to the Texting Playground's phone number
-            request = urllib2.Request(start_conversation_url, json.dumps({
+            request = Request(start_conversation_url, json.dumps({
                 'keyword': keyword,
                 'messages_must_be_older_than': str(start_time),
-            }), {'Content-Type': 'application/json'})
-            response_data = json.loads(urllib2.urlopen(request).read())
+            }).encode('utf-8'), {'Content-Type': 'application/json'})
+            response_data = json.loads(urlopen(request).read().decode('utf8'))
 
             # If nobody has texted our keyword to the Texting Playgroud yet,
             # wait a bit and check again.  If it's been a really long time,
@@ -83,11 +86,11 @@ class TxtConversation(object):
 
     def send_message(self, message, picture_url=None):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(send_message_url.format(self.conversation_code), json.dumps({
+        request = Request(send_message_url.format(self.conversation_code), json.dumps({
             'message': message,
             'picture_url': picture_url,
-        }), {'Content-Type': 'application/json'})
-        response = urllib2.urlopen(request)
+        }).encode('utf-8'), {'Content-Type': 'application/json'})
+        response = urlopen(request)
 
         # If the server told us something was wrong with our request, stop the program
         if response.getcode() != 200:
@@ -101,10 +104,10 @@ class TxtConversation(object):
             # Ask the server for the message the user sent to respond
             # to our last message sent to them
             url = get_response_message_url.format(self.conversation_code, response_type)
-            request = urllib2.Request(url, json.dumps({
+            request = Request(url, json.dumps({
                 'messages_must_be_older_than': str(start_time),
-            }), {'Content-Type': 'application/json'})
-            response_data = json.loads(urllib2.urlopen(request).read())
+            }).encode('utf-8'), {'Content-Type': 'application/json'})
+            response_data = json.loads(urlopen(request).read().decode('utf8'))
 
             # If the user hasn't responded yet, wait a bit and check again.
             # If it's been a really long time, stop waiting and stop the program.
@@ -153,30 +156,30 @@ class Picture(object):
         self.picture_code = picture_code
 
     def get_url(self):
-        request = urllib2.Request(get_transformed_picture_url.format(self.conversation_code, self.picture_code))
-        response_data = json.loads(urllib2.urlopen(request).read())
+        request = Request(get_transformed_picture_url.format(self.conversation_code, self.picture_code))
+        response_data = json.loads(urlopen(request).read().decode('utf8'))
         return response_data['url']
 
     def add_moustache(self, moustache_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "moustache"), json.dumps({
+        request = Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "moustache"), json.dumps({
             'moustache_name': moustache_name,
-        }), {'Content-Type': 'application/json'})
+        }).encode('utf-8'), {'Content-Type': 'application/json'})
 
         try:
-            urllib2.urlopen(request)
-        except urllib2.HTTPError as error:
+            urlopen(request)
+        except HTTPError as error:
             # If the server told us something was wrong with our request, stop the program
             raise Exception("Failed to add a moustsache: {}".format(error.read()))
 
     def add_glasses(self, glasses_name):
         # Tell the server to send a text message to the user in the conversation
-        request = urllib2.Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "glasses"), json.dumps({
+        request = Request(add_to_picture_url.format(self.conversation_code, self.picture_code, "glasses"), json.dumps({
             'glasses_name': glasses_name,
-        }), {'Content-Type': 'application/json'})
+        }).encode('utf-8'), {'Content-Type': 'application/json'})
 
         try:
-            urllib2.urlopen(request)
-        except urllib2.HTTPError as error:
+            urlopen(request)
+        except HTTPError as error:
             # If the server told us something was wrong with our request, stop the program
             raise Exception("Failed to add glasses: {}".format(error.read()))
