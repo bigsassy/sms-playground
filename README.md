@@ -117,7 +117,7 @@ from kidmuseum import TxtConversation
 
 conversation = TxtConversation("I <3 compliments")
 conversation.send_message("Hi! You love compliments?  Well I got tons of 'em!")
-name = converstaion.get_string("First, what's your name?")
+name = conversation.get_string("First, what's your name?")
 
 conversation.send_message("Hey, " + name + " is an awesome name!")
 conversation.send_message("I bet you're super smart too.")
