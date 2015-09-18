@@ -56,14 +56,14 @@ age_after_ten_years = age + 10
 conversation.send_message("In 10 years you'll be " + age_after_ten_years)
 ```
 #### get_floating_point
-Sends a message to the user asking for a response, and then returns the user's response as an integer.
+Sends a message to the user asking for a response, and then returns the user's response as a floating point number.
 ```python
 price = conversation.get_floating_point("How much was the bill?")
 tip = price * 0.20  # tip 20%
 conversation.send_message("You should tip " + tip)
 ```
 #### get_picture
-Sends a message to the user asking for a response, and then returns the user's response as an integer.
+Sends a message to the user asking for a response, and then returns the user's response as a Picture.
 ```python
 picture = conversation.get_picture("Gimme your best selfie")
 picture.add_glasses("kanye_shades")
