@@ -286,6 +286,7 @@ def get_transformed_picture(conversation_code, picture_code):
     try:
         image, original_image_path = get_image(url)
         face_features = DetectedFace(facepp.File(original_image_path), image)
+        _send_message(conversation_code, "...one sec...")
     finally:
         if original_image_path and os.path.exists(original_image_path):
             os.remove(original_image_path)
