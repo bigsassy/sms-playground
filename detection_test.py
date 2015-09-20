@@ -21,11 +21,12 @@ edit_index = 0
 edit_index_names = ['image', 'moustache', 'glasses']
 
 def refresh_image(bad_image, moustache_name, glasses_name):
-    frame = cv2.imread(get_moustache_path(moustache_name), -1)
+    frame = resize_image(cv2.imread(bad_image))
     face_features = DetectedFace(facepp.File(bad_image), frame)
 
-    #add_moustache(frame, face_features, moustache_name)
-    #add_glasses(image, face_features, glasses_name)
+    add_moustache(frame, face_features, moustache_name)
+    add_glasses(frame, face_features, glasses_name)
+    add_detected_features(frame, face_features)
 
     cv2.imshow("Window", frame)
 

@@ -9,7 +9,6 @@ from urlparse import urlparse
 import mimetypes
 import logging
 import logging.handlers
-import json
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request, make_response, redirect
@@ -54,72 +53,48 @@ pictures = {}
 
 
 #-----------------------------------------------------------------------------
-# Configure Haar Cascade Classifiers
-#-----------------------------------------------------------------------------
-
-# location of OpenCV Haar Cascade Classifiers:
-baseCascadePath = "./cascades/"
-
-# xml files describing our haar cascade classifiers
-faceCascadeFilePaths = [
-    baseCascadePath + "haarcascade_frontalface_default.xml",
-    baseCascadePath + "haarcascade_frontalface_alt.xml",
-    baseCascadePath + "haarcascade_frontalface_alt2.xml",
-    baseCascadePath + "haarcascade_frontalface_alt_tree.xml",
-]
-noseCascadeFilePaths = [
-    baseCascadePath + "haarcascade_mcs_nose.xml",
-    baseCascadePath + "haarcascade_mcs_mouth.xml",
-]
-eyeCascadeFilePaths = [
-    baseCascadePath + "haarcascade_eye.xml",
-    baseCascadePath + "haarcascade_lefteye_2splits.xml",
-    baseCascadePath + "haarcascade_righteye_2splits.xml",
-    baseCascadePath + "haarcascade_mcs_eyepair_big.xml",
-    baseCascadePath + "haarcascade_mcs_eyepair_small.xml",
-    baseCascadePath + "haarcascade_mcs_lefteye.xml",
-    baseCascadePath + "haarcascade_mcs_righteye.xml",
-]
-
-# build our cv2 Cascade Classifiers
-faceCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in faceCascadeFilePaths]
-noseCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in noseCascadeFilePaths]
-eyeCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in eyeCascadeFilePaths]
-
-
-#-----------------------------------------------------------------------------
 # Configure how different stuff gets added to a face
 #-----------------------------------------------------------------------------
 moustache_options = {
     'curly': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'handlebar': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'horseshoe': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'imperial': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'reynolds': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'walrus': {
-        'width_multi': 1.2,
+        'width_multi': 2,
     },
     'yosemite_sam': {
-        'width_multi': 1.2,
+        'width_multi': 1.6,
     },
 }
 
 glasses_options = {
-    'aviators': {},
-    'glasses': {},
-    'kanye': {},
-    'rectangle_glasses': {},
-    'shades': {},
+    'aviators': {
+        'width_multi': 2,
+    },
+    'glasses': {
+        'width_multi': 2,
+    },
+    'kanye': {
+        'width_multi': 2,
+    },
+    'rectangle_glasses': {
+        'width_multi': 2,
+    },
+    'shades': {
+        'width_multi': 2,
+    },
 }
 
 #-----------------------------------------------------------------------------
@@ -362,36 +337,90 @@ class DetectedFace(object):
         return self.image.shape[0]
 
     @property
+    def face_width(self):
+        return int(self.image_width * (self.position['width'] / 100))
+
+    @property
+    def face_height(self):
+        return int(self.image_height * (self.position['height'] / 100))
+
+    @property
+    def face_x1(self):
+        face_center = int(self.image_width * (self.position['center']['x'] / 100))
+        return face_center - int(self.face_width / 2)
+
+    @property
+    def face_y1(self):
+        face_center = int(self.image_height * (self.position['center']['y'] / 100))
+        return face_center - int(self.face_height / 2)
+
+    @property
+    def face_x2(self):
+        face_center = int(self.image_width * (self.position['center']['x'] / 100))
+        return face_center + int(self.face_width / 2)
+
+    @property
+    def face_y2(self):
+        face_center = int(self.image_height * (self.position['center']['y'] / 100))
+        return face_center + int(self.face_height / 2)
+    
+    @property
+    def left_eye_x(self):
+        return int(self.image_width * (self.position['eye_left']['x'] / 100))
+
+    @property
+    def left_eye_y(self):
+        return int(self.image_height * (self.position['eye_left']['y'] / 100))
+
+    @property
+    def right_eye_x(self):
+        return int(self.image_width * (self.position['eye_right']['x'] / 100))
+
+    @property
+    def right_eye_y(self):
+        return int(self.image_height * (self.position['eye_right']['y'] / 100))
+
+    @property
     def mouth_width(self):
-        return self.image_width * self.position['mouth_right']['x'] - self.image_width * self.position['mouth_left']['x']
+        return int((self.image_width * self.position['mouth_right']['x'] / 100) - \
+                   (self.image_width * self.position['mouth_left']['x'] / 100))
 
     @property
     def mouth_x1(self):
-        return self.image_width * self.position['mouth_left']['x']
+        return int(self.image_width * (self.position['mouth_left']['x'] / 100))
 
     @property
     def mouth_y1(self):
-        return self.image_height * self.position['mouth_left']['y']
+        return int(self.image_height * (self.position['mouth_left']['y'] / 100))
 
     @property
     def mouth_x2(self):
-        return self.image_width * self.position['mouth_right']['x']
+        return int(self.image_width * (self.position['mouth_right']['x'] / 100))
 
     @property
     def mouth_y2(self):
-        return self.image_height * self.position['mouth_right']['y']
+        return int(self.image_height * (self.position['mouth_right']['y'] / 100))
 
     @property
     def nose_x(self):
-        return self.image_width * self.position['nose']['x']
+        return int(self.image_width * (self.position['nose']['x'] / 100))
 
     @property
     def nose_y(self):
-        return self.image_height * self.position['nose']['y']
+        return int(self.image_height * (self.position['nose']['y'] / 100))
+
+
+def add_detected_features(image, face_features):
+    cv2.circle(image, (face_features.left_eye_x,face_features.left_eye_y), 5, (190, 170, 45), -1)
+    cv2.circle(image, (face_features.right_eye_x,face_features.right_eye_y), 5, (190, 170, 45), -1)
+    cv2.circle(image, (face_features.nose_x,face_features.nose_y), 5, (190, 170, 45), -1)
+    cv2.circle(image, (face_features.mouth_x1,face_features.mouth_y1), 5, (190, 170, 45), -1)
+    cv2.circle(image, (face_features.mouth_x2,face_features.mouth_y2), 5, (190, 170, 45), -1)
+    cv2.rectangle(image, (face_features.face_x1, face_features.face_y1),
+                  (face_features.face_x2, face_features.face_y2), (190, 170, 45), 5)
 
 
 def add_moustache(image, face_features, moustache_name):
-
     # Load the moustache image we're adding to the image
     imgMustache = cv2.imread(get_moustache_path(moustache_name), -1)
 
@@ -413,7 +442,7 @@ def add_moustache(image, face_features, moustache_name):
     # Calculate the position for the moustache on the person's face
     x1 = face_features.mouth_x1 - ((moustacheWidth - face_features.mouth_width) / 2)
     x2 = x1 + moustacheWidth
-    y1 = face_features.mouth_y1 + ((face_features.mouth_y1 - face_features.nose_y) / 2)
+    y1 = face_features.mouth_y1 - (((face_features.mouth_y1 - face_features.nose_y) / 8) * 5)
     y2 = y1 + moustacheHeight
 
     # Check for clipping
@@ -428,9 +457,9 @@ def add_moustache(image, face_features, moustache_name):
 
     # Re-size the original image and the masks to the moustache sizes
     # calcualted above
-    moustache = cv2.resize(imgMustache, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
-    mask = cv2.resize(orig_mask, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
-    mask_inv = cv2.resize(orig_mask_inv, (moustacheWidth,moustacheHeight), interpolation = cv2.INTER_AREA)
+    moustache = cv2.resize(imgMustache, (moustacheWidth,moustacheHeight), interpolation=cv2.INTER_AREA)
+    mask = cv2.resize(orig_mask, (moustacheWidth,moustacheHeight), interpolation=cv2.INTER_AREA)
+    mask_inv = cv2.resize(orig_mask_inv, (moustacheWidth,moustacheHeight), interpolation=cv2.INTER_AREA)
 
     # take ROI for moustache from background equal to size of moustache image
     roi = image[y1:y2, x1:x2]
@@ -449,10 +478,7 @@ def add_moustache(image, face_features, moustache_name):
     image[y1:y2, x1:x2] = dst
 
 
-def add_glasses(image, face_xywh, eyes_xywh, glasses_name):
-    x, y, w, h = face_xywh
-    ex, ey, ew, eh = eyes_xywh
-
+def add_glasses(image, face_features, glasses_name):
     # Load glasses we're adding to the image
     imgGlasses = cv2.imread(get_glasses_path(glasses_name), -1)
 
@@ -468,28 +494,25 @@ def add_glasses(image, face_xywh, eyes_xywh, glasses_name):
     origGlassesHeight, origGlassesWidth = imgGlasses.shape[:2]
 
     # The glasses should overlap the eyes a little bit
-    glassesWidth =  int(ew * 1.3)
+    eyes_width = face_features.right_eye_x - face_features.left_eye_x
+    glassesWidth =  int(eyes_width * glasses_options[glasses_name]['width_multi'])
     glassesHeight = int(origGlassesHeight * (float(glassesWidth) / origGlassesWidth))
 
     # Center the glasses over the eyes
-    x1 = (ex + (ew / 2)) - (glassesWidth / 2)
+    x1 = face_features.left_eye_x - ((glassesWidth - eyes_width) / 2)
     x2 = x1 + glassesWidth
-    y1 = ey
-    y2 = ey + glassesHeight
+    y1 = face_features.left_eye_y - (glassesHeight / 2)
+    y2 = y1 + glassesHeight
 
     # Check for clipping
     if x1 < 0:
         x1 = 0
     if y1 < 0:
         y1 = 0
-    if x2 > w:
-        x2 = w
-    if y2 > h:
-        y2 = h
-
-    # Re-calculate the width and height of the glasses image
-    glassesWidth = x2 - x1
-    glassesHeight = y2 - y1
+    if x2 > face_features.image_width:
+        x2 = face_features.image_width
+    if y2 > face_features.image_height:
+        y2 = face_features.image_height
 
     # Re-size the original image and the masks to the glasses sizes
     # calcualted above
@@ -526,6 +549,10 @@ def get_glasses_path(glasses_name):
     return 'images/glasses/{}.png'.format(glasses_name)
 
 
+def make_unique_id():
+    return "%032x" % random.getrandbits(128)
+
+
 def _send_message(conversation_code, message, picture_url=None):
     args = {
         'body': message,
@@ -538,10 +565,6 @@ def _send_message(conversation_code, message, picture_url=None):
     logger.info("Sent message to {}: {}{} ({})".format(
         conversation_to_phone_number[conversation_code], message,
         "|{}".format(picture_url) if picture_url else "", conversation_code))
-
-
-def make_unique_id():
-    return "%032x" % random.getrandbits(128)
 
 
 def get_file_extension_from_url(url):
@@ -591,72 +614,10 @@ def resize_image(image):
 
 
 def transform_image(image, transform_info, face_features):
-    # Apply transforms for the face
-    if transform_info['moustache'] and nose_xywh is not None:
+    if transform_info['moustache']:
         add_moustache(image, face_features, transform_info['moustache'])
-
-    if transform_info['glasses'] and eyes_xywh is not None:
+    if transform_info['glasses']:
         add_glasses(image, face_features, transform_info['moustache'])
-
-
-# ----------------------------------------------------------------------------
-# Possibly obsolete functions
-# ----------------------------------------------------------------------------
-
-def get_face(image, faceCascade):
-    face_color = None
-    face_gray = None
-    face_xywh = None
-
-    # Get a grayscale version of the image to help with calculations
-    grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Detect the position of a face in the image
-    faces_found = faceCascade.detectMultiScale(
-        grayscale_image,
-        scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(30, 30),
-        flags=cv2.CASCADE_SCALE_IMAGE
-    )
-
-    # Detect the eyes and nose if we found a face in the image
-    if len(faces_found) > 0:
-        face_xywh = x, y, w, h = faces_found[0]
-        face_gray = grayscale_image[y:y+h, x:x+w]
-        face_color = image[y:y+h, x:x+w]
-
-    return face_color, face_gray, face_xywh, faces_found
-
-
-def get_nose(image, noseCascade):
-    if image is None:
-        return None, []
-    noses_found = noseCascade.detectMultiScale(image)
-    return noses_found[0] if len(noses_found) > 0 else None, noses_found
-
-
-def get_eyes(image, eyeCascade):
-    if image is None:
-        return None, None, None, []
-    left_eye_xywh = None
-    right_eye_xywh = None
-    eyes_xywh = None
-    eyes = eyeCascade.detectMultiScale(image)
-    if len(eyes) == 2:
-        # Bounding boxes for each eye
-        left_eye_xywh = eyes[0] if eyes[0][0] < eyes[1][0] else eyes[1]
-        right_eye_xywh = eyes[0] if eyes[0][0] >= eyes[1][0] else eyes[1]
-
-        # Bounding box for both eyes
-        eyes_xywh = (
-            left_eye_xywh[0],
-            min(eyes[0][1], eyes[1][1]),
-            right_eye_xywh[0] + right_eye_xywh[2] - left_eye_xywh[0],
-            max(left_eye_xywh[1] + left_eye_xywh[3], right_eye_xywh[1] + right_eye_xywh[3]) - min(left_eye_xywh[1], right_eye_xywh[1])
-        )
-
-    return left_eye_xywh, right_eye_xywh, eyes_xywh, eyes
 
 
 # ----------------------------------------------------------------------------
