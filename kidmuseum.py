@@ -1,10 +1,22 @@
-from datetime import datetime
+import sys
 import time
+import json
+from datetime import datetime
 try:
     from urllib2 import Request, urlopen, HTTPError
 except:
     from urllib.request import Request, urlopen, HTTPError
-import json
+
+
+def handle_server_down(exctype, value, traceback):
+    if exctype == HTTPError and 'HTTP Error 502' in str(value):
+        print("Uh oh. Looks like the SMS Playground server is down :(")
+        print("You won't be able to run your program until it's brought back online.")
+        print("Email carreric@gmail.com to request for Eric to turn the server back on.")
+        sys.exit(1)
+    else:
+        sys.__excepthook__(exctype, value, traceback)
+sys.excepthook = handle_server_down
 
 
 start_conversation_url = "http://sms-playground.com/conversation/start"
