@@ -9,15 +9,19 @@ from urlparse import urlparse
 import mimetypes
 import logging
 import logging.handlers
+import json
 
 from twilio.rest import TwilioRestClient
 from flask import Flask, request, make_response, redirect
 import dateutil.parser
 import cv2
 import boto3
+import facepp
 
-ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
-AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
+TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
+TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
+FACEPP_API_KEY = os.environ['FACEPP_API_KEY']
+FACEPP_API_SECRET = os.environ['FACEPP_API_SECRET']
 AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
 LOG_PATH = os.environ.get('LOG_PATH', "server.log")
@@ -36,7 +40,8 @@ logger.addHandler(streamHandler)
 
 logger.info("Started server.")
 
-twilio = TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN)
+twilio = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+facepp_api = facepp.API(FACEPP_API_KEY, FACEPP_API_SECRET, 'http://api.us.faceplusplus.com/')
 app = Flask(__name__)
 
 # Keeps track of which text messages we've already handled
@@ -56,15 +61,66 @@ pictures = {}
 baseCascadePath = "./cascades/"
 
 # xml files describing our haar cascade classifiers
-faceCascadeFilePath = baseCascadePath + "haarcascade_frontalface_default.xml"
-noseCascadeFilePath = baseCascadePath + "haarcascade_mcs_nose.xml"
-eyeCascadeFilePath = baseCascadePath + "haarcascade_eye.xml"
+faceCascadeFilePaths = [
+    baseCascadePath + "haarcascade_frontalface_default.xml",
+    baseCascadePath + "haarcascade_frontalface_alt.xml",
+    baseCascadePath + "haarcascade_frontalface_alt2.xml",
+    baseCascadePath + "haarcascade_frontalface_alt_tree.xml",
+]
+noseCascadeFilePaths = [
+    baseCascadePath + "haarcascade_mcs_nose.xml",
+    baseCascadePath + "haarcascade_mcs_mouth.xml",
+]
+eyeCascadeFilePaths = [
+    baseCascadePath + "haarcascade_eye.xml",
+    baseCascadePath + "haarcascade_lefteye_2splits.xml",
+    baseCascadePath + "haarcascade_righteye_2splits.xml",
+    baseCascadePath + "haarcascade_mcs_eyepair_big.xml",
+    baseCascadePath + "haarcascade_mcs_eyepair_small.xml",
+    baseCascadePath + "haarcascade_mcs_lefteye.xml",
+    baseCascadePath + "haarcascade_mcs_righteye.xml",
+]
 
 # build our cv2 Cascade Classifiers
-faceCascade = cv2.CascadeClassifier(faceCascadeFilePath)
-noseCascade = cv2.CascadeClassifier(noseCascadeFilePath)
-eyeCascade = cv2.CascadeClassifier(eyeCascadeFilePath)
+faceCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in faceCascadeFilePaths]
+noseCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in noseCascadeFilePaths]
+eyeCascades = [cv2.CascadeClassifier(cascadeFilePath) for cascadeFilePath in eyeCascadeFilePaths]
 
+
+#-----------------------------------------------------------------------------
+# Configure how different stuff gets added to a face
+#-----------------------------------------------------------------------------
+moustache_options = {
+    'curly': {
+        'width_multi': 1.2,
+    },
+    'handlebar': {
+        'width_multi': 1.2,
+    },
+    'horseshoe': {
+        'width_multi': 1.2,
+    },
+    'imperial': {
+        'width_multi': 1.2,
+    },
+    'reynolds': {
+        'width_multi': 1.2,
+    },
+    'walrus': {
+        'width_multi': 1.2,
+    },
+    'yosemite_sam': {
+        'width_multi': 1.2,
+    },
+}
+
+glasses_options = {
+    'aviators': {},
+    'glasses': {},
+    'kanye': {},
+    'rectangle_glasses': {},
+    'shades': {},
+}
 
 #-----------------------------------------------------------------------------
 # API Endpoints
@@ -251,11 +307,12 @@ def get_transformed_picture(conversation_code, picture_code):
     # Download the picture
     url = pictures[picture_code]['url']
     image = get_image(url)
+    face_features = DetectedFace(url, image)
     transformed_image_path = None
 
     try:
         # Apply all the transforms queued up by earlier API calls (i.e. add_to_picture calls)
-        transform_image(image, pictures[picture_code])
+        transform_image(image, pictures[picture_code], face_features)
 
         # Save the transformed picture and upload it to S3 (file storage in the cloud)
         file_extension = get_file_extension_from_url(url)
@@ -287,9 +344,53 @@ def internal_error(exception):
 # Image transform functions
 # ----------------------------------------------------------------------------
 
-def add_moustache(image, face_xywh, nose_xywh, moustache_name):
-    x, y, w, h = face_xywh
-    nx, ny, nw, nh = nose_xywh
+class DetectedFace(object):
+    """
+    Information for detected facial features in an image.
+    """
+    def __init__(self, url, image):
+        self.data = facepp_api.detection.detect(img=url, mode="oneface")
+        self.position = self.data['face'][0]['position']
+        self.image = image
+
+    @property
+    def image_width(self):
+        return self.image.shape[1]
+
+    @property
+    def image_height(self):
+        return self.image.shape[0]
+
+    @property
+    def mouth_width(self):
+        return self.image_width * self.position['mouth_right']['x'] - self.image_width * self.position['mouth_left']['x']
+
+    @property
+    def mouth_x1(self):
+        return self.image_width * self.position['mouth_left']['x']
+
+    @property
+    def mouth_y1(self):
+        return self.image_height * self.position['mouth_left']['y']
+
+    @property
+    def mouth_x2(self):
+        return self.image_width * self.position['mouth_right']['x']
+
+    @property
+    def mouth_y2(self):
+        return self.image_height * self.position['mouth_right']['y']
+
+    @property
+    def nose_x(self):
+        return self.image_width * self.position['nose']['x']
+
+    @property
+    def nose_y(self):
+        return self.image_height * self.position['nose']['y']
+
+
+def add_moustache(image, face_features, moustache_name):
 
     # Load the moustache image we're adding to the image
     imgMustache = cv2.imread(get_moustache_path(moustache_name), -1)
@@ -305,14 +406,14 @@ def add_moustache(image, face_xywh, nose_xywh, moustache_name):
     imgMustache = imgMustache[:,:,0:3]
     origMustacheHeight, origMustacheWidth = imgMustache.shape[:2]
 
-    # The moustache should be three times the width of the nose
-    moustacheWidth =  int(2 * nw)
+    # Calculate the size the moustache should be on the person's face
+    moustacheWidth =  int(face_features.mouth_width * moustache_options[moustache_name]['width_multi'])
     moustacheHeight = int(origMustacheHeight * (float(moustacheWidth) / origMustacheWidth))
 
-    # Center the moustache on the bottom of the nose
-    x1 = (nx + (nw / 2)) - (moustacheWidth / 2)
+    # Calculate the position for the moustache on the person's face
+    x1 = face_features.mouth_x1 - ((moustacheWidth - face_features.mouth_width) / 2)
     x2 = x1 + moustacheWidth
-    y1 = ny + (nh / 2)
+    y1 = face_features.mouth_y1 + ((face_features.mouth_y1 - face_features.nose_y) / 2)
     y2 = y1 + moustacheHeight
 
     # Check for clipping
@@ -320,14 +421,10 @@ def add_moustache(image, face_xywh, nose_xywh, moustache_name):
         x1 = 0
     if y1 < 0:
         y1 = 0
-    if x2 > w:
-        x2 = w
-    if y2 > h:
-        y2 = h
-
-    # Re-calculate the width and height of the moustache image
-    moustacheWidth = x2 - x1
-    moustacheHeight = y2 - y1
+    if x2 > face_features.image_width:
+        x2 = face_features.image_width
+    if y2 > face_features.image_height:
+        y2 = face_features.image_height
 
     # Re-size the original image and the masks to the moustache sizes
     # calcualted above
@@ -396,9 +493,9 @@ def add_glasses(image, face_xywh, eyes_xywh, glasses_name):
 
     # Re-size the original image and the masks to the glasses sizes
     # calcualted above
-    glasses = cv2.resize(imgGlasses, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
-    mask = cv2.resize(orig_mask_sg, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
-    mask_inv = cv2.resize(orig_mask_inv_sg, (glassesWidth,glassesHeight), interpolation = cv2.INTER_AREA)
+    glasses = cv2.resize(imgGlasses, (glassesWidth,glassesHeight), interpolation=cv2.INTER_AREA)
+    mask = cv2.resize(orig_mask_sg, (glassesWidth,glassesHeight), interpolation=cv2.INTER_AREA)
+    mask_inv = cv2.resize(orig_mask_inv_sg, (glassesWidth,glassesHeight), interpolation=cv2.INTER_AREA)
 
     # take ROI for glasses from background equal to size of glasses image
     roi = image[y1:y2, x1:x2]
@@ -420,6 +517,7 @@ def add_glasses(image, face_xywh, eyes_xywh, glasses_name):
 # ----------------------------------------------------------------------------
 # Support functions
 # ----------------------------------------------------------------------------
+
 def get_moustache_path(moustache_name):
     return 'images/moustaches/{}.png'.format(moustache_name)
 
@@ -472,26 +570,45 @@ def get_image(url):
         response = urllib2.urlopen(request)
         with open(image_path, "w") as saved_image:
             saved_image.write(response.read())
-        image = cv2.imread(image_path)
-
-        # Make sure the image is a small enough size for the detection algoritms
-        # to work with an acceptable accuracy
-        original_height, original_width = image.shape[:2]
-        if max(original_height, original_width) > 640:
-            if original_height > original_width:
-                image = cv2.resize(image, (int(original_width * (640.0 / original_height)), 640))
-            else:
-                image = cv2.resize(image, (640, int(original_height * (640.0 / original_width))))
+        image = resize_image(cv2.imread(image_path))
     finally:
-        pass
-        # if image_path and os.path.exists(image_path):
-        #     os.remove(image_path)
+        if image_path and os.path.exists(image_path):
+            os.remove(image_path)
 
     return image
 
 
-def transform_image(image, transform_info):
-    # Get a greyscale version of the image to help with calculations
+def resize_image(image):
+    # Make sure the image is a small enough size for the detection algoritms
+    # to work with an acceptable accuracy
+    original_height, original_width = image.shape[:2]
+    if max(original_height, original_width) > 640:
+        if original_height > original_width:
+            image = cv2.resize(image, (int(original_width * (640.0 / original_height)), 640))
+        else:
+            image = cv2.resize(image, (640, int(original_height * (640.0 / original_width))))
+    return image
+
+
+def transform_image(image, transform_info, face_features):
+    # Apply transforms for the face
+    if transform_info['moustache'] and nose_xywh is not None:
+        add_moustache(image, face_features, transform_info['moustache'])
+
+    if transform_info['glasses'] and eyes_xywh is not None:
+        add_glasses(image, face_features, transform_info['moustache'])
+
+
+# ----------------------------------------------------------------------------
+# Possibly obsolete functions
+# ----------------------------------------------------------------------------
+
+def get_face(image, faceCascade):
+    face_color = None
+    face_gray = None
+    face_xywh = None
+
+    # Get a grayscale version of the image to help with calculations
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Detect the position of a face in the image
@@ -509,36 +626,42 @@ def transform_image(image, transform_info):
         face_gray = grayscale_image[y:y+h, x:x+w]
         face_color = image[y:y+h, x:x+w]
 
-        nose_xywh = None
-        noses_found = noseCascade.detectMultiScale(face_gray)
-        if len(noses_found) > 0:
-            nose_xywh = noses_found[0]
+    return face_color, face_gray, face_xywh, faces_found
 
-        eyes_xywh = None
-        eyes = eyeCascade.detectMultiScale(face_gray)
-        if len(eyes) == 2:
-            # Bounding boxes for each eye
-            left_eye_xywh = eyes[0] if eyes[0][0] < eyes[1][0] else eyes[1]
-            right_eye_xywh = eyes[0] if eyes[0][0] >= eyes[1][0] else eyes[1]
 
-            # Bounding box for both eyes
-            eyes_xywh = (
-                left_eye_xywh[0],
-                min(eyes[0][1], eyes[1][1]),
-                right_eye_xywh[0] + right_eye_xywh[2] - left_eye_xywh[0],
-                max(left_eye_xywh[1] + left_eye_xywh[3], right_eye_xywh[1] + right_eye_xywh[3]) - min(left_eye_xywh[1], right_eye_xywh[1])
-            )
+def get_nose(image, noseCascade):
+    if image is None:
+        return None, []
+    noses_found = noseCascade.detectMultiScale(image)
+    return noses_found[0] if len(noses_found) > 0 else None, noses_found
 
-        # Apply transforms for the face
-        if transform_info['moustache'] and nose_xywh is not None:
-            add_moustache(face_color, face_xywh, nose_xywh, transform_info['moustache'])
 
-        if transform_info['glasses'] and eyes_xywh is not None:
-            add_glasses(face_color, face_xywh, eyes_xywh, transform_info['glasses'])
+def get_eyes(image, eyeCascade):
+    if image is None:
+        return None, None, None, []
+    left_eye_xywh = None
+    right_eye_xywh = None
+    eyes_xywh = None
+    eyes = eyeCascade.detectMultiScale(image)
+    if len(eyes) == 2:
+        # Bounding boxes for each eye
+        left_eye_xywh = eyes[0] if eyes[0][0] < eyes[1][0] else eyes[1]
+        right_eye_xywh = eyes[0] if eyes[0][0] >= eyes[1][0] else eyes[1]
+
+        # Bounding box for both eyes
+        eyes_xywh = (
+            left_eye_xywh[0],
+            min(eyes[0][1], eyes[1][1]),
+            right_eye_xywh[0] + right_eye_xywh[2] - left_eye_xywh[0],
+            max(left_eye_xywh[1] + left_eye_xywh[3], right_eye_xywh[1] + right_eye_xywh[3]) - min(left_eye_xywh[1], right_eye_xywh[1])
+        )
+
+    return left_eye_xywh, right_eye_xywh, eyes_xywh, eyes
 
 
 # ----------------------------------------------------------------------------
 # Main
 # ----------------------------------------------------------------------------
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)
