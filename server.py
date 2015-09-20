@@ -280,10 +280,15 @@ def add_to_picture(conversation_code, picture_code, area):
 @app.route("/conversation/<conversation_code>/picture/<picture_code>/", methods=['GET'])
 def get_transformed_picture(conversation_code, picture_code):
     # Download the picture
-    url = pictures[picture_code]['url']
-    image = get_image(url)
-    face_features = DetectedFace(url, image)
+    original_image_path = None
     transformed_image_path = None
+    url = pictures[picture_code]['url']
+    try:
+        image, original_image_path = get_image(url)
+        face_features = DetectedFace(facepp.File(original_image_path), image)
+    finally:
+        if original_image_path and os.path.exists(original_image_path):
+            os.remove(original_image_path)
 
     try:
         # Apply all the transforms queued up by earlier API calls (i.e. add_to_picture calls)
@@ -323,11 +328,8 @@ class DetectedFace(object):
     """
     Information for detected facial features in an image.
     """
-    def __init__(self, file_or_url, image):
-        if type(file_or_url) == facepp.File:
-            self.data = facepp_api.detection.detect(img=file_or_url, mode="oneface")
-        else:
-            self.data = facepp_api.detection.detect(url=file_or_url, mode="oneface")
+    def __init__(self, file, image):
+        self.data = facepp_api.detection.detect(img=file, mode="oneface")
         self.position = self.data['face'][0]['position']
         self.image = image
 
@@ -586,22 +588,22 @@ def get_file_extension_from_url(url):
 
 
 def get_image(url):
-    image_path = None
+    # Download the image to the server's hard drive and load it so we can manipulate it
+    file_extension = get_file_extension_from_url(url)
+    file_extension = ".{}".format(file_extension) if file_extension else ""
+    image_path = "images/{}{}".format(str(uuid.uuid4()).replace("-", ""), file_extension)
     try:
-        # Download the image to the server's hard drive and load it so we can manipulate it
-        file_extension = get_file_extension_from_url(url)
-        file_extension = ".{}".format(file_extension) if file_extension else ""
-        image_path = "images/{}{}".format(str(uuid.uuid4()).replace("-", ""), file_extension)
         request = urllib2.Request(url, headers={ 'User-Agent': 'Mozilla/5.0' })
         response = urllib2.urlopen(request)
         with open(image_path, "w") as saved_image:
             saved_image.write(response.read())
         image = resize_image(cv2.imread(image_path))
-    finally:
+    except:
         if image_path and os.path.exists(image_path):
             os.remove(image_path)
+        raise
 
-    return image
+    return image, image_path
 
 
 def resize_image(image):
