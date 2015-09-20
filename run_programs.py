@@ -6,7 +6,7 @@ if not os.path.exists(path):
     raise Exception("{} hasn't been created yet.".format(path))
 
 # Get all the processes currently running
-procs = [p for p in psutil.process_iter()]
+procs = [p for p in psutil.process_iter() if p.is_running()]
 
 for program in os.listdir(path):
     program_path = os.path.join(path, program)
