@@ -63,7 +63,7 @@ class TxtConversation(object):
         Program:  Gotta go, ttyl!
     """
 
-    def __init__(self, keyword):
+    def __init__(self, keyword, timeout=None):
         """
         This is the code that get's called when you create the conversation.
 
@@ -73,7 +73,6 @@ class TxtConversation(object):
 
         :param keyword: What someone would text to start this conversation (e.g. "I <3 compliments")
         """
-        timeout_seconds = 120
         start_time = datetime.utcnow()
 
         while (True):
@@ -90,7 +89,7 @@ class TxtConversation(object):
             # stop waiting and stop the program.
             if 'wait_for_seconds' in response_data:
                 time.sleep(response_data['wait_for_seconds'])
-                if (datetime.utcnow() - start_time).seconds >= timeout_seconds:
+                if timeout and (datetime.utcnow() - start_time).seconds >= timeout:
                     raise Exception("Too much time passed while waiting for text with {}.".format(keyword))
                 continue
 
