@@ -622,7 +622,7 @@ def transform_image(image, transform_info, face_features):
     if transform_info['moustache']:
         add_moustache(image, face_features, transform_info['moustache'])
     if transform_info['glasses']:
-        add_glasses(image, face_features, transform_info['moustache'])
+        add_glasses(image, face_features, transform_info['glasses'])
 
 
 # ----------------------------------------------------------------------------
