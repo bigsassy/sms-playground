@@ -323,8 +323,11 @@ class DetectedFace(object):
     """
     Information for detected facial features in an image.
     """
-    def __init__(self, url, image):
-        self.data = facepp_api.detection.detect(img=url, mode="oneface")
+    def __init__(self, file_or_url, image):
+        if type(file_or_url) == facepp.File:
+            self.data = facepp_api.detection.detect(img=file_or_url, mode="oneface")
+        else:
+            self.data = facepp_api.detection.detect(url=file_or_url, mode="oneface")
         self.position = self.data['face'][0]['position']
         self.image = image
 
